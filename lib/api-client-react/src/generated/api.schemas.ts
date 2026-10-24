@@ -137,6 +137,15 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface CoachingVoice {
+  id: string;
+  name: string;
+}
+
+export interface CoachingVoiceList {
+  voices: CoachingVoice[];
+}
+
 export interface Choice {
   id: string;
   text: string;
@@ -377,5 +386,31 @@ export interface TranslationInput {
 export interface Translation {
   text: string;
   language: string;
+}
+
+export type CoachingSpeechInputLanguage = typeof CoachingSpeechInputLanguage[keyof typeof CoachingSpeechInputLanguage];
+
+
+export const CoachingSpeechInputLanguage = {
+  English: 'English',
+  Hinglish: 'Hinglish',
+  Hindi: 'Hindi',
+  Kannada: 'Kannada',
+  Telugu: 'Telugu',
+  Tamil: 'Tamil',
+} as const;
+
+export interface CoachingSpeechInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  simulationId: string;
+  language: CoachingSpeechInputLanguage;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  voiceId: string;
 }
 

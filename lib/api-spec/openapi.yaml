@@ -247,6 +247,29 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Translation" }
+  /coach/voices:
+    get:
+      operationId: getCoachingVoices
+      responses:
+        "200":
+          description: Voices available to the configured speech account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoachingVoiceList" }
+  /coach/speech:
+    post:
+      operationId: speakCoaching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CoachingSpeechInput" }
+      responses:
+        "200":
+          description: AI-generated coaching speech
+          content:
+            audio/mpeg:
+              schema: { type: string, format: binary }
 components:
   schemas:
     LearningQuestion:
@@ -354,6 +377,17 @@ components:
       required: [status]
       properties:
         status: { type: string }
+    CoachingVoice:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    CoachingVoiceList:
+      type: object
+      required: [voices]
+      properties:
+        voices: { type: array, items: { $ref: "#/components/schemas/CoachingVoice" } }
     Choice:
       type: object
       required: [id, text]
@@ -546,3 +580,10 @@ components:
       properties:
         text: { type: string }
         language: { type: string }
+    CoachingSpeechInput:
+      type: object
+      required: [simulationId, language, voiceId]
+      properties:
+        simulationId: { type: string, minLength: 1, maxLength: 100 }
+        language: { type: string, enum: [English, Hinglish, Hindi, Kannada, Telugu, Tamil] }
+        voiceId: { type: string, minLength: 1, maxLength: 100 }

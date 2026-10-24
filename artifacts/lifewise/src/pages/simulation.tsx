@@ -5,20 +5,24 @@ import QRCode from 'qrcode';
 import {
   getGetAgentRunsQueryKey,
   getGetApprovalsQueryKey,
+  getGetCoachingVoicesQueryKey,
   getGetLearnerQueryKey,
   getGetProofQueryKey,
   getGetSimulationQueryKey,
+  useGetCoachingVoices,
   useCreatePayment,
   useGetAgentRuns,
   useGetProof,
   useGetSimulation,
   useMakeDecision,
   useRunAgent,
+  speakCoaching,
   useTranslateCoaching,
   useVerifyPayment,
   type AgentRun,
   type Payment,
   type Simulation,
+  type CoachingSpeechInputLanguage,
 } from '@workspace/api-client-react';
 import { AlertTriangle, Award, BadgeCheck, Download, Hourglass, Loader2, Printer, Square, Volume2, XCircle } from 'lucide-react';
 import { useLearner } from '@/hooks/use-learner';
@@ -27,13 +31,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { LANGS, SPEECH_LANG, download, errMsg, fmt, isApproved, isComplete, isRejected } from '@/lib/lw';
 
-function Coach({ text, defaultLang }: { text: string; defaultLang: string }) {
+function Coach({ text, simulationId, defaultLang }: { text: string; simulationId: string; defaultLang: string }) {
   const [lang, setLang] = useState<string>(defaultLang);
   const [cache, setCache] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [voiceErr, setVoiceErr] = useState<string | null>(null);
+  const [selectedVoiceId, setSelectedVoiceId] = useState('');
+  const voicesQuery = useGetCoachingVoices({ query: { queryKey: getGetCoachingVoicesQueryKey(), staleTime: 5 * 60 * 1000, retry: false } });
+  const voices = voicesQuery.data?.voices ?? [];
+  const voiceId = voices.some((voice) => voice.id === selectedVoiceId) ? selectedVoiceId : voices[0]?.id;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   const translate = useTranslateCoaching();
   const tRef = useRef(translate.mutateAsync);
   tRef.current = translate.mutateAsync;
@@ -58,12 +69,30 @@ function Coach({ text, defaultLang }: { text: string; defaultLang: string }) {
     if (!cache[key]) void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
+  const releaseAudio = useCallback(() => {
+    const player = audioRef.current;
+    if (player) {
+      player.pause();
+      player.removeAttribute('src');
+      player.load();
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    if (supported) window.speechSynthesis.cancel();
+    setSpeaking(false);
+  }, [supported]);
 
-  function speak() {
-    if (!supported || !shown) return;
+  useEffect(() => {
+    releaseAudio();
     setVoiceErr(null);
-    window.speechSynthesis.cancel();
+    return releaseAudio;
+  }, [key, releaseAudio]);
+
+  function speakWithDevice(): boolean {
+    if (!supported || !shown) return false;
     const u = new SpeechSynthesisUtterance(shown);
     u.lang = SPEECH_LANG[lang] ?? 'en-IN';
     const prefix = u.lang.split('-')[0];
@@ -75,8 +104,50 @@ function Coach({ text, defaultLang }: { text: string; defaultLang: string }) {
     u.onend = () => setSpeaking(false);
     u.onerror = (ev) => { setSpeaking(false); setVoiceErr('Voice playback failed (' + ev.error + ').'); };
     window.speechSynthesis.speak(u);
+    return true;
   }
-  function stop() { window.speechSynthesis.cancel(); setSpeaking(false); }
+
+  async function speak() {
+    if (!shown || voiceBusy) return;
+    setVoiceErr(null);
+    releaseAudio();
+    setVoiceBusy(true);
+    try {
+      if (!voiceId) {
+        await voicesQuery.refetch();
+        throw new Error('No ElevenLabs voices are available for this account.');
+      }
+      const audio = await speakCoaching(
+        { simulationId, language: lang as CoachingSpeechInputLanguage, voiceId },
+        { responseType: 'blob' },
+      );
+      const url = URL.createObjectURL(audio);
+      audioUrlRef.current = url;
+      const player = new Audio(url);
+      audioRef.current = player;
+      player.onended = () => {
+        if (audioRef.current === player) {
+          audioRef.current = null;
+          if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+          audioUrlRef.current = null;
+          setSpeaking(false);
+        }
+      };
+      player.onerror = () => setVoiceErr('ElevenLabs audio could not be played on this device.');
+      await player.play();
+      setSpeaking(true);
+    } catch (e) {
+      releaseAudio();
+      const started = speakWithDevice();
+      setVoiceErr(started
+        ? 'ElevenLabs voice is unavailable; playing your device voice instead.'
+        : 'Voice playback is unavailable. Check the connection and try again.');
+    } finally {
+      setVoiceBusy(false);
+    }
+  }
+
+  function stop() { releaseAudio(); }
 
   return (
     <div className="mt-4 rounded-xl bg-navy/5 p-4" data-testid="panel-coach">
@@ -91,17 +162,24 @@ function Coach({ text, defaultLang }: { text: string; defaultLang: string }) {
         <p role="alert" className="text-sm text-destructive">{err} <button className="font-semibold underline" onClick={() => void load()}>Retry</button></p>
       )}
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        {supported ? (
-          speaking ? (
-            <button data-testid="button-voice-stop" onClick={stop} className="flex items-center gap-2 rounded-lg bg-amber px-4 py-2 text-sm font-bold text-white"><Square className="h-4 w-4" /> Stop</button>
-          ) : (
-            <button data-testid="button-voice-listen" disabled={!shown} onClick={speak} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white disabled:opacity-50"><Volume2 className="h-4 w-4" /> Listen to voice coach</button>
-          )
+        {speaking ? (
+          <button data-testid="button-voice-stop" onClick={stop} className="flex items-center gap-2 rounded-lg bg-amber px-4 py-2 text-sm font-bold text-white"><Square className="h-4 w-4" /> Stop</button>
         ) : (
-          <p data-testid="text-voice-unsupported" className="flex items-center gap-2 text-sm font-medium text-amber"><AlertTriangle className="h-4 w-4" /> This browser cannot play speech. Try Chrome or Safari.</p>
+          <button data-testid="button-voice-listen" disabled={!shown || voiceBusy} onClick={() => void speak()} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+            {voiceBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
+            {voiceBusy ? 'Preparing voice…' : 'Listen to voice coach'}
+          </button>
         )}
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          Voice
+          <select aria-label="ElevenLabs voice" value={voiceId ?? ''} disabled={voicesQuery.isLoading || voices.length === 0 || voiceBusy} onChange={(e) => setSelectedVoiceId(e.target.value)} className="max-w-44 rounded-md border bg-card px-2 py-1 text-foreground">
+            {voices.length === 0 && <option value="">{voicesQuery.isLoading ? 'Loading…' : 'Device voice fallback'}</option>}
+            {voices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}
+          </select>
+        </label>
         {voiceErr && <p role="alert" data-testid="text-voice-error" className="text-xs text-destructive">{voiceErr}</p>}
       </div>
+      <p className="mt-2 text-xs text-muted-foreground">AI-generated audio may use your ElevenLabs account credits. If unavailable, your device voice is used.</p>
     </div>
   );
 }
@@ -268,7 +346,7 @@ export default function SimulationPage() {
         <section data-testid="section-feedback" className="rise rounded-2xl border bg-card p-5">
           <p className="font-mono text-[11px] uppercase tracking-widest text-amber">Why this matters in the real world</p>
           <p data-testid="text-feedback" className="mt-1 font-semibold text-navy">{sim.feedback}</p>
-          <Coach text={sim.feedback} defaultLang={lang} />
+          <Coach text={sim.feedback} simulationId={sim.id} defaultLang={lang} />
         </section>
       )}
 

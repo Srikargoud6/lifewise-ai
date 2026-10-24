@@ -14,7 +14,7 @@ Hinglish, Hindi, Kannada, Telugu, and Tamil.
 This is a working **hackathon demo, not a production-certified service**.
 
 - Five preloaded scenarios have server-calculated illustrative scores, persistent
-  progress, localized coaching, and browser speech playback.
+  progress, localized coaching, on-demand ElevenLabs speech, and device-voice fallback.
 - Name/contact onboarding creates an **unverified browser profile**, not a
   verified identity or a secure user account.
 - The mentor console is explicitly public demo review, not authenticated
@@ -26,6 +26,10 @@ This is a working **hackathon demo, not a production-certified service**.
 - AI scenario generation and custom translation use the configured managed
   OpenAI integration. Generated scenarios have strict three-step output
   validation; native-language translations preserve the selected script.
+- ElevenLabs voice IDs are loaded from the learner's authenticated provider
+  account. Audio is generated on demand from server-owned simulation feedback,
+  capped, rate-limited and cached in memory; retries may use provider credits.
+  API credentials are read only by the server and never sent to the browser.
 - Free learner IQ results do not require payment. The demo badge and action kit
   require human approval; download/print additionally require test checkout.
 - Proof counters are calculated from actual database rows. No fabricated
@@ -115,8 +119,8 @@ Add managed authentication and enforce mentor authorization server-side.
 Connect and implement real AgenticOrg execution and Pine Labs
 merchant checkout using current provider documentation and server-verified
 payment status/webhook signatures. Add appropriate student privacy, consent,
-retention and support policies. Browser voice playback depends on installed
-device voices; it cannot be guaranteed on all browsers.
+retention and support policies. ElevenLabs speech needs the project secret and
+may use account credits; the browser device voice remains a fallback.
 
 ## Verification performed
 

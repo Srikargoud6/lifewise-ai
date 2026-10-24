@@ -674,3 +674,26 @@ export const TranslateCoachingResponse = zod.object({
 })
 
 
+export const GetCoachingVoicesResponse = zod.object({
+  "voices": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
+})
+
+
+export const speakCoachingBodySimulationIdMax = 100;
+
+export const speakCoachingBodyVoiceIdMax = 100;
+
+
+
+export const SpeakCoachingBody = zod.object({
+  "simulationId": zod.string().min(1).max(speakCoachingBodySimulationIdMax),
+  "language": zod.enum(['English', 'Hinglish', 'Hindi', 'Kannada', 'Telugu', 'Tamil']),
+  "voiceId": zod.string().min(1).max(speakCoachingBodyVoiceIdMax)
+})
+
+export const SpeakCoachingResponse = zod.unknown()
+
+

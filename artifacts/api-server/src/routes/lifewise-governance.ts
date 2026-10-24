@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-zod";
 import { lessons } from "../lib/curriculum";
 import { aiReady } from "../lib/lifewise-ai";
+import { elevenLabsReady } from "../lib/elevenlabs";
 import {
   browser, getRecord, getRecords, insertRecord, saveRecord, now, uid,
   requireLearner, ownedSimulation, HttpError, publicName, publicRun,
@@ -158,7 +159,7 @@ router.get("/proof", async (_req, res): Promise<void> => {
     integrations: {
       agenticOrg: "Not connected · local demo evaluator only",
       pineLabs: "Not connected · test checkout only · no real payments",
-      voice: "Browser SpeechSynthesis · device voice availability varies",
+      voice: elevenLabsReady() ? "ElevenLabs AI voice · device fallback available" : "Browser SpeechSynthesis · device voice availability varies",
       ai: aiReady() ? "Replit AI Integrations · OpenAI" : "Awaiting phone verification · preloaded curriculum available",
     },
   }));
