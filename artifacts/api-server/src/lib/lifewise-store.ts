@@ -14,8 +14,9 @@ export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 
 export function browser(req: Request, res: Response): string {
   const prior = req.signedCookies?.lw_browser;
-  if (typeof prior === "string" && /^[a-f0-9]{64}$/.test(prior)) return hash(prior);
-  const token = randomBytes(32).toString("hex");
+  const token = typeof prior === "string" && /^[a-f0-9]{64}$/.test(prior) ? prior : randomBytes(32).toString("hex");
+  // Rolling inactivity expiry: active learners must not lose their browser
+  // profile after 30 days while working toward a 50/100-day milestone.
   res.cookie("lw_browser", token, {
     signed: true, httpOnly: true, sameSite: "lax",
     secure: req.secure || req.get("x-forwarded-proto") === "https",

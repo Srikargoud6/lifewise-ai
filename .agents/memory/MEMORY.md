@@ -1,2 +1,3 @@
 - [AI activation gate](ai-activation.md) — phone-verification status is a user activation requirement, not a missing API key.
 - [Managed AI output compatibility](managed-ai-output.md) — keep native-script validation local unless provider-side Unicode-pattern support is verified.
+- [Drizzle test schemas](drizzle-test-schema.md) — injected test connections must match the full schema module, including non-table exports.

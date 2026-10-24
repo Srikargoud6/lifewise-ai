@@ -38,6 +38,8 @@ This is a working **hackathon demo, not a production-certified service**.
 - `pnpm run typecheck` — typecheck shared libraries and apps.
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API contracts.
 - `pnpm --filter @workspace/db run push` — apply development schema changes.
+- `pnpm --filter @workspace/api-server run test:learning` — learning unit and
+  PostgreSQL integration checks; database fixtures use a disposable schema.
 - Use existing artifact-managed workflows; do not configure duplicate services.
 - Preview frontend is `/`; shared API is `/api`.
 
@@ -72,6 +74,41 @@ This is a working **hackathon demo, not a production-certified service**.
 - Decision updates and approval audits use transactions; evaluation and payment
   creation use stable unique keys so retries do not inflate counters.
 
+## Learn library, streaks and rewards
+
+- `/learn` is independent of `/` (Simulations). The authored English library
+  contains 18 beginner lessons across six distinct subjects. Reading and the
+  ordinary quizzes require no AI call or payment. Coaching language remains
+  independent; the new lessons are not represented as translated content.
+- Published lesson text and answer keys live separately from learner records.
+  Only public questions/options are returned before submission. Attempts,
+  progress and achievements use the existing PostgreSQL document model; no
+  database replacement or new table is required.
+- Every attempt is server-graded and owned by the signed browser cookie.
+  Registration remains unverified, without secure sign-in or cross-device
+  recovery. The cookie expires after 30 days of inactivity and rolls forward
+  on use so active learners can reach 100-day milestones.
+- A complete lesson quiz or five-question daily submission credits one day,
+  regardless of score. Reads never count. PostgreSQL time after acquiring the
+  learner lock determines the Asia/Kolkata date. Same-day attempts cannot
+  inflate streaks; best streak and awards survive gaps.
+- Progress and unique milestone awards are saved atomically with the attempt.
+  Retry request IDs replay their original result; changed payloads under an
+  existing request ID are rejected. Intentional practice retakes get new IDs.
+- Daily assignments are deterministic and versioned. Never change the question
+  bank or assignment algorithm for an already-published daily version; introduce
+  a new version and retain the old bank if the curriculum changes.
+- 50-Day Learning Champion and 100-Day Life Skills Master are non-monetary
+  learning-habit badges, not mentor approvals or accredited certifications.
+- References were checked on 2026-10-24: ECI voter education, central RTI FAQs,
+  RBI financial education/basic banking, NPCI Safety Shield, ICMR-NIN 2024
+  dietary guidance, WHO Patient Safety Rights Charter, UNESCO AI ethics and
+  the Income Tax Department salaried guide (AY 2026–27). IRDAI's indexed health
+  insurance handbook was linked for concepts; its host timed out during the
+  check. Actual policies and current jurisdiction/year rules take precedence.
+- All historical-streak verification fixtures belong in disposable database
+  schemas, never live learner records or public proof counters.
+
 ## Before production launch
 
 Add managed authentication and enforce mentor authorization server-side.
@@ -88,3 +125,12 @@ Preloaded-track and proof endpoints respond. Desktop and mobile home pages
 were visually checked. No first-build end-to-end browser tests were run.
 Live AI scenario generation and translation were checked independently without
 adding synthetic learner or payment records to the proof dashboard.
+
+The Learn addition passed workspace typechecks and seven automated learning
+checks, including actual PostgreSQL concurrent submissions and milestone awards
+in a disposable schema. A focused desktop/phone browser journey verified
+registration-to-quiz submission, missing-answer validation, saved reviews after
+reload, best-score preservation on retake, stable daily questions, same-day
+streak limits and locked rewards. Its temporary browser profile and all owned
+test rows were removed afterward. Simulation launch uses the unchanged existing
+start endpoint; it was checked in code, not repeated in the browser pass.

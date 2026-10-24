@@ -7,6 +7,150 @@
 import * as zod from 'zod';
 
 
+export const GetLearningLibraryResponseItem = zod.object({
+  "id": zod.string(),
+  "subject": zod.enum(['Politics', 'Government', 'Ethics', 'Economy', 'Health', 'Finance']),
+  "title": zod.string(),
+  "goal": zod.string(),
+  "explanation": zod.array(zod.string()),
+  "example": zod.string(),
+  "takeaways": zod.array(zod.string()),
+  "nextStep": zod.string(),
+  "caveat": zod.string(),
+  "references": zod.array(zod.object({
+  "title": zod.string(),
+  "url": zod.string()
+})),
+  "reviewedOn": zod.string(),
+  "simulationTrackId": zod.string().optional(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string())
+}))
+})
+export const GetLearningLibraryResponse = zod.array(GetLearningLibraryResponseItem)
+
+
+export const GetDailyChallengeResponse = zod.object({
+  "id": zod.string(),
+  "day": zod.string(),
+  "timezone": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string())
+}))
+})
+
+
+export const GetLearningProgressResponse = zod.object({
+  "today": zod.string(),
+  "timezone": zod.string(),
+  "currentStreak": zod.number().int(),
+  "bestStreak": zod.number().int(),
+  "todayCompleted": zod.boolean(),
+  "learningDays": zod.array(zod.string()),
+  "lessons": zod.array(zod.object({
+  "lessonId": zod.string(),
+  "bestScore": zod.number().int(),
+  "attempts": zod.number().int(),
+  "lastResult": zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['lesson', 'daily']),
+  "sourceId": zod.string(),
+  "score": zod.number().int(),
+  "total": zod.number().int(),
+  "completedAt": zod.string(),
+  "day": zod.string(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "prompt": zod.string(),
+  "selected": zod.string(),
+  "correct": zod.string(),
+  "explanation": zod.string()
+})),
+  "newAchievements": zod.array(zod.object({
+  "days": zod.number().int(),
+  "title": zod.string(),
+  "awardedAt": zod.string()
+}))
+})
+})),
+  "achievements": zod.array(zod.object({
+  "days": zod.number().int(),
+  "title": zod.string(),
+  "awardedAt": zod.string()
+})),
+  "dailyResult": zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['lesson', 'daily']),
+  "sourceId": zod.string(),
+  "score": zod.number().int(),
+  "total": zod.number().int(),
+  "completedAt": zod.string(),
+  "day": zod.string(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "prompt": zod.string(),
+  "selected": zod.string(),
+  "correct": zod.string(),
+  "explanation": zod.string()
+})),
+  "newAchievements": zod.array(zod.object({
+  "days": zod.number().int(),
+  "title": zod.string(),
+  "awardedAt": zod.string()
+}))
+}).optional()
+})
+
+
+export const submitLearningQuizBodyRequestIdMin = 16;
+export const submitLearningQuizBodyRequestIdMax = 80;
+
+
+export const submitLearningQuizBodyRequestIdRegExp = new RegExp('^[a-zA-Z0-9_-]+$');
+export const submitLearningQuizBodySourceIdMax = 100;
+
+export const submitLearningQuizBodyAnswersItemMin = 0;
+export const submitLearningQuizBodyAnswersItemMax = 3;
+
+export const submitLearningQuizBodyAnswersMin = 3;
+export const submitLearningQuizBodyAnswersMax = 5;
+
+
+
+export const SubmitLearningQuizBody = zod.object({
+  "requestId": zod.string().min(submitLearningQuizBodyRequestIdMin).max(submitLearningQuizBodyRequestIdMax).regex(submitLearningQuizBodyRequestIdRegExp),
+  "kind": zod.enum(['lesson', 'daily']),
+  "sourceId": zod.string().min(1).max(submitLearningQuizBodySourceIdMax),
+  "answers": zod.array(zod.number().int().min(submitLearningQuizBodyAnswersItemMin).max(submitLearningQuizBodyAnswersItemMax)).min(submitLearningQuizBodyAnswersMin).max(submitLearningQuizBodyAnswersMax)
+})
+
+export const SubmitLearningQuizResponse = zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['lesson', 'daily']),
+  "sourceId": zod.string(),
+  "score": zod.number().int(),
+  "total": zod.number().int(),
+  "completedAt": zod.string(),
+  "day": zod.string(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "prompt": zod.string(),
+  "selected": zod.string(),
+  "correct": zod.string(),
+  "explanation": zod.string()
+})),
+  "newAchievements": zod.array(zod.object({
+  "days": zod.number().int(),
+  "title": zod.string(),
+  "awardedAt": zod.string()
+}))
+})
+
+
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })

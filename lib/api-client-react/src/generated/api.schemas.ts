@@ -4,6 +4,135 @@
  * Api
  * OpenAPI spec version: 1.0.0
  */
+export interface LearningQuestion {
+  id: string;
+  prompt: string;
+  options: string[];
+}
+
+export interface LearningReference {
+  title: string;
+  url: string;
+}
+
+export type LearningLessonSubject = typeof LearningLessonSubject[keyof typeof LearningLessonSubject];
+
+
+export const LearningLessonSubject = {
+  Politics: 'Politics',
+  Government: 'Government',
+  Ethics: 'Ethics',
+  Economy: 'Economy',
+  Health: 'Health',
+  Finance: 'Finance',
+} as const;
+
+export interface LearningLesson {
+  id: string;
+  subject: LearningLessonSubject;
+  title: string;
+  goal: string;
+  explanation: string[];
+  example: string;
+  takeaways: string[];
+  nextStep: string;
+  caveat: string;
+  references: LearningReference[];
+  reviewedOn: string;
+  simulationTrackId?: string;
+  questions: LearningQuestion[];
+}
+
+export interface DailyChallenge {
+  id: string;
+  day: string;
+  timezone: string;
+  questions: LearningQuestion[];
+}
+
+export type LearningQuizInputKind = typeof LearningQuizInputKind[keyof typeof LearningQuizInputKind];
+
+
+export const LearningQuizInputKind = {
+  lesson: 'lesson',
+  daily: 'daily',
+} as const;
+
+export interface LearningQuizInput {
+  /**
+     * @minLength 16
+     * @maxLength 80
+     * @pattern ^[a-zA-Z0-9_-]+$
+     */
+  requestId: string;
+  kind: LearningQuizInputKind;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  sourceId: string;
+  /**
+     * @minItems 3
+     * @maxItems 5
+     * @items.minimum 0
+     * @items.maximum 3
+     */
+  answers: number[];
+}
+
+export interface LearningReview {
+  questionId: string;
+  prompt: string;
+  selected: string;
+  correct: string;
+  explanation: string;
+}
+
+export interface LearningAchievement {
+  days: number;
+  title: string;
+  awardedAt: string;
+}
+
+export type LearningResultKind = typeof LearningResultKind[keyof typeof LearningResultKind];
+
+
+export const LearningResultKind = {
+  lesson: 'lesson',
+  daily: 'daily',
+} as const;
+
+export interface LearningResult {
+  id: string;
+  kind: LearningResultKind;
+  sourceId: string;
+  score: number;
+  total: number;
+  completedAt: string;
+  day: string;
+  review: LearningReview[];
+  newAchievements: LearningAchievement[];
+}
+
+export interface LearningCompletion {
+  lessonId: string;
+  bestScore: number;
+  attempts: number;
+  lastResult: LearningResult;
+}
+
+export interface LearningProgress {
+  today: string;
+  timezone: string;
+  currentStreak: number;
+  bestStreak: number;
+  todayCompleted: boolean;
+  learningDays: string[];
+  lessons: LearningCompletion[];
+  achievements: LearningAchievement[];
+  dailyResult?: LearningResult;
+}
+
 export interface HealthStatus {
   status: string;
 }

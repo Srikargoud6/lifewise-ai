@@ -5,6 +5,47 @@ info:
 servers:
   - url: /api
 paths:
+  /learn/lessons:
+    get:
+      operationId: getLearningLibrary
+      responses:
+        "200":
+          description: Published English beginner lessons
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/LearningLesson" } }
+  /learn/daily:
+    get:
+      operationId: getDailyChallenge
+      responses:
+        "200":
+          description: Stable challenge for the server's Kolkata calendar day
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DailyChallenge" }
+  /learn/progress:
+    get:
+      operationId: getLearningProgress
+      responses:
+        "200":
+          description: Current browser learner's progress
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningProgress" }
+  /learn/attempts:
+    post:
+      operationId: submitLearningQuiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearningQuizInput" }
+      responses:
+        "200":
+          description: Server-graded result and newly earned achievements
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearningResult" }
   /healthz:
     get:
       operationId: healthCheck
@@ -208,6 +249,106 @@ paths:
               schema: { $ref: "#/components/schemas/Translation" }
 components:
   schemas:
+    LearningQuestion:
+      type: object
+      required: [id, prompt, options]
+      properties:
+        id: { type: string }
+        prompt: { type: string }
+        options: { type: array, items: { type: string } }
+    LearningReference:
+      type: object
+      required: [title, url]
+      properties:
+        title: { type: string }
+        url: { type: string }
+    LearningLesson:
+      type: object
+      required: [id, subject, title, goal, explanation, example, takeaways, nextStep, caveat, references, reviewedOn, questions]
+      properties:
+        id: { type: string }
+        subject: { type: string, enum: [Politics, Government, Ethics, Economy, Health, Finance] }
+        title: { type: string }
+        goal: { type: string }
+        explanation: { type: array, items: { type: string } }
+        example: { type: string }
+        takeaways: { type: array, items: { type: string } }
+        nextStep: { type: string }
+        caveat: { type: string }
+        references: { type: array, items: { $ref: "#/components/schemas/LearningReference" } }
+        reviewedOn: { type: string }
+        simulationTrackId: { type: string }
+        questions: { type: array, items: { $ref: "#/components/schemas/LearningQuestion" } }
+    DailyChallenge:
+      type: object
+      required: [id, day, timezone, questions]
+      properties:
+        id: { type: string }
+        day: { type: string }
+        timezone: { type: string }
+        questions: { type: array, items: { $ref: "#/components/schemas/LearningQuestion" } }
+    LearningQuizInput:
+      type: object
+      required: [requestId, kind, sourceId, answers]
+      properties:
+        requestId: { type: string, minLength: 16, maxLength: 80, pattern: "^[a-zA-Z0-9_-]+$" }
+        kind: { type: string, enum: [lesson, daily] }
+        sourceId: { type: string, minLength: 1, maxLength: 100 }
+        answers:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items: { type: integer, minimum: 0, maximum: 3 }
+    LearningReview:
+      type: object
+      required: [questionId, prompt, selected, correct, explanation]
+      properties:
+        questionId: { type: string }
+        prompt: { type: string }
+        selected: { type: string }
+        correct: { type: string }
+        explanation: { type: string }
+    LearningAchievement:
+      type: object
+      required: [days, title, awardedAt]
+      properties:
+        days: { type: integer }
+        title: { type: string }
+        awardedAt: { type: string }
+    LearningResult:
+      type: object
+      required: [id, kind, sourceId, score, total, completedAt, day, review, newAchievements]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [lesson, daily] }
+        sourceId: { type: string }
+        score: { type: integer }
+        total: { type: integer }
+        completedAt: { type: string }
+        day: { type: string }
+        review: { type: array, items: { $ref: "#/components/schemas/LearningReview" } }
+        newAchievements: { type: array, items: { $ref: "#/components/schemas/LearningAchievement" } }
+    LearningCompletion:
+      type: object
+      required: [lessonId, bestScore, attempts, lastResult]
+      properties:
+        lessonId: { type: string }
+        bestScore: { type: integer }
+        attempts: { type: integer }
+        lastResult: { $ref: "#/components/schemas/LearningResult" }
+    LearningProgress:
+      type: object
+      required: [today, timezone, currentStreak, bestStreak, todayCompleted, learningDays, lessons, achievements]
+      properties:
+        today: { type: string }
+        timezone: { type: string }
+        currentStreak: { type: integer }
+        bestStreak: { type: integer }
+        todayCompleted: { type: boolean }
+        learningDays: { type: array, items: { type: string } }
+        lessons: { type: array, items: { $ref: "#/components/schemas/LearningCompletion" } }
+        achievements: { type: array, items: { $ref: "#/components/schemas/LearningAchievement" } }
+        dailyResult: { $ref: "#/components/schemas/LearningResult" }
     HealthStatus:
       type: object
       required: [status]

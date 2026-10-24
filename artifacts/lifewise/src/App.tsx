@@ -8,6 +8,7 @@ import Home from '@/pages/home';
 import SimulationPage from '@/pages/simulation';
 import Approvals from '@/pages/approvals';
 import Observatory from '@/pages/observatory';
+import { LearnHome, LessonPage, DailyPage, ProgressPage } from '@/pages/learn';
 import Proof from '@/pages/proof';
 import { Shell } from '@/components/shell';
 import { LearnerProvider } from '@/hooks/use-learner';
@@ -21,6 +22,10 @@ function Router() {
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/learn" component={LearnHome} />
+          <Route path="/learn/lesson/:id" component={LessonPage} />
+          <Route path="/learn/daily" component={DailyPage} />
+          <Route path="/learn/progress" component={ProgressPage} />
           <Route path="/simulation/:id" component={SimulationPage} />
           <Route path="/approvals" component={Approvals} />
           <Route path="/observatory" component={Observatory} />
