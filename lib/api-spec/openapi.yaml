@@ -1,36 +1,407 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+  /tracks:
+    get:
+      operationId: getTracks
+      responses:
+        "200":
+          description: Life skills tracks
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: { $ref: "#/components/schemas/Track" }
+  /learners:
+    post:
+      operationId: registerLearner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LearnerInput" }
+      responses:
+        "201":
+          description: Unverified learner registration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Learner" }
+  /learners/me:
+    get:
+      operationId: getLearner
+      responses:
+        "200":
+          description: Current browser learner
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LearnerState" }
+  /scenarios/custom:
+    post:
+      operationId: createScenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScenarioInput" }
+      responses:
+        "201":
+          description: Generated scenario
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Track" }
+  /simulations:
+    post:
+      operationId: startSimulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SimulationInput" }
+      responses:
+        "201":
+          description: Started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+  /simulations/{id}:
+    get:
+      operationId: getSimulation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Simulation and current step
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+  /simulations/{id}/decisions:
+    post:
+      operationId: makeDecision
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DecisionInput" }
+      responses:
+        "200":
+          description: Updated meters and coaching
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Simulation" }
+  /agent/run:
+    post:
+      operationId: runAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentInput" }
+      responses:
+        "200":
+          description: Action plan awaiting mentor approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRun" }
+  /agent/runs:
+    get:
+      operationId: getAgentRuns
+      responses:
+        "200":
+          description: Redacted demo agent traces
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AgentRun" }
+  /approvals:
+    get:
+      operationId: getApprovals
+      responses:
+        "200":
+          description: Demo mentor queue
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AgentRun" }
+  /approvals/{id}:
+    post:
+      operationId: reviewApproval
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalInput" }
+      responses:
+        "200":
+          description: Recorded human decision
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRun" }
+  /payments/pinelabs/create:
+    post:
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentInput" }
+      responses:
+        "201":
+          description: Explicit test checkout
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+  /payments/pinelabs/verify:
+    post:
+      operationId: verifyPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentInput" }
+      responses:
+        "200":
+          description: Test verification only, never proof of real payment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+  /proof:
+    get:
+      operationId: getProof
+      responses:
+        "200":
+          description: Honest redacted live telemetry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Proof" }
+  /coach/translate:
+    post:
+      operationId: translateCoaching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TranslationInput" }
+      responses:
+        "200":
+          description: Localized coaching
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Translation" }
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+    Choice:
+      type: object
+      required: [id, text]
+      properties:
+        id: { type: string }
+        text: { type: string }
+    Step:
+      type: object
+      required: [title, situation, choices]
+      properties:
+        title: { type: string }
+        situation: { type: string }
+        choices:
+          type: array
+          items: { $ref: "#/components/schemas/Choice" }
+    Track:
+      type: object
+      required: [id, name, title, description, difficulty, duration, skills, steps, impactLabel]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        title: { type: string }
+        description: { type: string }
+        difficulty: { type: string }
+        duration: { type: string }
+        impactLabel: { type: string }
+        skills: { type: array, items: { type: string } }
+        steps: { type: array, items: { $ref: "#/components/schemas/Step" } }
+    LearnerInput:
+      type: object
+      required: [name, contact, ageGroup, language]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        contact: { type: string, minLength: 5, maxLength: 120 }
+        ageGroup: { type: string, enum: [School Student, College Student, First Job] }
+        language: { type: string, enum: [English, Hinglish, Hindi, Kannada, Telugu, Tamil] }
+    Learner:
+      type: object
+      required: [id, name, ageGroup, language, timestamp, status, verified]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        ageGroup: { type: string }
+        language: { type: string }
+        timestamp: { type: string }
+        status: { type: string }
+        verified: { type: boolean }
+    LearnerState:
+      type: object
+      required: [learner, simulations]
+      properties:
+        learner:
+          anyOf:
+            - { $ref: "#/components/schemas/Learner" }
+            - { type: "null" }
+        simulations: { type: array, items: { $ref: "#/components/schemas/Simulation" } }
+    ScenarioInput:
+      type: object
+      required: [prompt]
+      properties:
+        prompt: { type: string, minLength: 10, maxLength: 1000 }
+    SimulationInput:
+      type: object
+      required: [trackId]
+      properties:
+        trackId: { type: string }
+    DecisionInput:
+      type: object
+      required: [step, choiceId]
+      properties:
+        step: { type: integer, minimum: 0, maximum: 2 }
+        choiceId: { type: string }
+    Simulation:
+      type: object
+      required: [id, learnerId, trackId, trackTitle, currentStep, choices, mastery, confidence, impact, impactLabel, status, feedback, timestamp, track]
+      properties:
+        id: { type: string }
+        learnerId: { type: string }
+        trackId: { type: string }
+        trackTitle: { type: string }
+        currentStep: { type: integer }
+        choices: { type: array, items: { type: string } }
+        mastery: { type: integer }
+        confidence: { type: integer }
+        impact: { type: integer }
+        impactLabel: { type: string }
+        status: { type: string }
+        feedback: { type: string }
+        timestamp: { type: string }
+        completedAt: { type: string }
+        track: { $ref: "#/components/schemas/Track" }
+    AgentInput:
+      type: object
+      required: [simulationId]
+      properties:
+        simulationId: { type: string }
+    AgentRun:
+      type: object
+      required: [id, simulationId, learnerName, trackTitle, agentName, role, provider, toolsCalled, reasoningSteps, actions, confidenceScore, mastery, impact, status, timestamp]
+      properties:
+        id: { type: string }
+        simulationId: { type: string }
+        learnerName: { type: string }
+        trackTitle: { type: string }
+        agentName: { type: string }
+        role: { type: string }
+        provider: { type: string }
+        toolsCalled: { type: array, items: { type: string } }
+        reasoningSteps: { type: array, items: { type: string } }
+        actions: { type: array, items: { type: string } }
+        confidenceScore: { type: number }
+        mastery: { type: integer }
+        impact: { type: integer }
+        status: { type: string }
+        timestamp: { type: string }
+        mentorNote: { type: string }
+        approver: { type: string }
+        approvedAt: { type: string }
+    ApprovalInput:
+      type: object
+      required: [action, approver]
+      properties:
+        action: { type: string, enum: [approve, approve_with_note, reject] }
+        approver: { type: string, minLength: 2, maxLength: 80 }
+        note: { type: string, maxLength: 1000 }
+    PaymentInput:
+      type: object
+      required: [orderId, mode]
+      properties:
+        orderId: { type: string }
+        mode: { type: string, enum: [test] }
+    Payment:
+      type: object
+      required: [id, simulationId, learnerId, amount, currency, mode, status, timestamp, upiIntent]
+      properties:
+        id: { type: string }
+        simulationId: { type: string }
+        learnerId: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        mode: { type: string }
+        status: { type: string }
+        timestamp: { type: string }
+        upiIntent: { type: string }
+        utr: { type: string }
+        verifiedAt: { type: string }
+    Audit:
+      type: object
+      required: [id, runId, proposal, action, approver, note, timestamp]
+      properties:
+        id: { type: string }
+        runId: { type: string }
+        proposal: { type: string }
+        action: { type: string }
+        approver: { type: string }
+        note: { type: string }
+        timestamp: { type: string }
+    Proof:
+      type: object
+      required: [signups, payingUsers, testPayments, agentRuns, approvals, completedSimulations, learners, simulations, runs, audits, payments, integrations]
+      properties:
+        signups: { type: integer }
+        payingUsers: { type: integer }
+        testPayments: { type: integer }
+        agentRuns: { type: integer }
+        approvals: { type: integer }
+        completedSimulations: { type: integer }
+        learners: { type: array, items: { $ref: "#/components/schemas/Learner" } }
+        simulations: { type: array, items: { $ref: "#/components/schemas/Simulation" } }
+        runs: { type: array, items: { $ref: "#/components/schemas/AgentRun" } }
+        audits: { type: array, items: { $ref: "#/components/schemas/Audit" } }
+        payments: { type: array, items: { $ref: "#/components/schemas/Payment" } }
+        integrations:
+          type: object
+          required: [agenticOrg, pineLabs, voice, ai]
+          properties:
+            agenticOrg: { type: string }
+            pineLabs: { type: string }
+            voice: { type: string }
+            ai: { type: string }
+    TranslationInput:
+      type: object
+      required: [text, language]
+      properties:
+        text: { type: string, minLength: 1, maxLength: 3000 }
+        language: { type: string, enum: [English, Hinglish, Hindi, Kannada, Telugu, Tamil] }
+    Translation:
+      type: object
+      required: [text, language]
+      properties:
+        text: { type: string }
+        language: { type: string }

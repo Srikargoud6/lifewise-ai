@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Lifewise AI"
+description = "A mobile-first real-life skills simulator with five learning tracks, personalized coaching, human mentor approval, and transparent activity logs."
+version = "1.0.0"
+id = "artifacts/lifewise"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19074
+
+[services.development]
+run = "pnpm --filter @workspace/lifewise run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lifewise", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/lifewise/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19074"
+BASE_PATH = "/"
