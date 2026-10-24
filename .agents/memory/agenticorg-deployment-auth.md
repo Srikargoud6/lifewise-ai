@@ -16,3 +16,9 @@ correct API route does not establish that it is the correct deployment.
 deployment's current API contract. Use a bounded read-only credential check
 before any billable agent execution. Distinguish 401 from 403; neither alone
 proves an API key needs different scopes.
+
+Do not treat current public-repository or SDK authentication support as proof
+of what the hackathon server has deployed. If a replacement workspace key with
+the documented format still fails through independent HTTP clients, obtain
+the deployment-specific integration instructions rather than repeatedly
+asking the user to rotate keys.
