@@ -19,8 +19,13 @@ This is a working **hackathon demo, not a production-certified service**.
   verified identity or a secure user account.
 - The mentor console is explicitly public demo review, not authenticated
   role-based access. Do not present these badges as accredited certifications.
-- Chanakya_LifeCoach is a local rubric evaluator with public decision summaries
-  and an approval stop. It is **not** a connected AgenticOrg execution.
+- Historical Chanakya_LifeCoach runs remain explicitly labeled local demos.
+  New completed simulations can request AgenticOrg evaluation with an explicit
+  user click and disclosure, followed by the separate demo human-approval gate.
+  The adapter is implemented, but live authorization is not yet verified.
+  This project uses the Pine Labs hackathon AgenticOrg deployment:
+  `https://agenticorg.hackathon.pinelabs.com`. Set `AGENTICORG_BASE_URL` to that
+  origin, not the dashboard URL. Agent ID and API key stay in server Secrets.
 - ₹9 checkout uses a non-payable demonstration QR. Test verification updates
   test-only membership and never contributes to the real-paying-users counter.
 - AI scenario generation and custom translation use the configured managed
@@ -116,8 +121,8 @@ This is a working **hackathon demo, not a production-certified service**.
 ## Before production launch
 
 Add managed authentication and enforce mentor authorization server-side.
-Connect and implement real AgenticOrg execution and Pine Labs
-merchant checkout using current provider documentation and server-verified
+Verify AgenticOrg authorization and output against the configured deployment,
+then connect Pine Labs merchant checkout using current provider documentation and server-verified
 payment status/webhook signatures. Add appropriate student privacy, consent,
 retention and support policies. ElevenLabs speech needs the project secret and
 may use account credits; the browser device voice remains a fallback.

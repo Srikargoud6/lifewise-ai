@@ -2,7 +2,6 @@ import { z } from "zod/v4";
 import { HttpError } from "./lifewise-store";
 import type { Lesson, Simulation } from "./lifewise-types";
 
-const DEFAULT_BASE_URL = "https://app.agenticorg.ai";
 const MAX_AGENT_RESPONSE_LENGTH = 128_000;
 
 const coachingOutputSchema = z.object({
@@ -53,12 +52,16 @@ function agentCredentials(): { agentId: string; apiKey: string; baseUrl: string 
   if (agentId.length <= 30 || !agentId.includes("-")) {
     throw new HttpError(503, "AGENTICORG_AGENT_ID must be the AgenticOrg agent UUID, not its name or agent type.");
   }
-  const baseUrl = process.env.AGENTICORG_BASE_URL?.trim() || DEFAULT_BASE_URL;
+  const baseUrl = process.env.AGENTICORG_BASE_URL?.trim();
+  if (!baseUrl) throw new HttpError(503, "Set AGENTICORG_BASE_URL to the HTTPS origin of the deployment that issued your AgenticOrg key.");
   let parsedUrl: URL;
   try { parsedUrl = new URL(baseUrl); }
   catch { throw new HttpError(503, "AGENTICORG_BASE_URL must be a valid HTTPS URL."); }
   if (parsedUrl.protocol !== "https:" || parsedUrl.username || parsedUrl.password) {
     throw new HttpError(503, "AgenticOrg must use an HTTPS base URL without embedded credentials.");
+  }
+  if (parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash) {
+    throw new HttpError(503, "AGENTICORG_BASE_URL must contain only the website origin, without /dashboard, /api, a query, or a fragment.");
   }
   return { agentId, apiKey, baseUrl: parsedUrl.toString().replace(/\/+$/, "") };
 }
@@ -120,6 +123,7 @@ export async function evaluateWithAgenticOrg(simulation: Simulation, lesson: Les
         },
       }),
       signal: AbortSignal.timeout(60_000),
+      redirect: "error",
     });
   } catch {
     throw new HttpError(503, "AgenticOrg could not be reached. No review was saved; you can retry.");
@@ -186,4 +190,4 @@ export async function evaluateWithAgenticOrg(simulation: Simulation, lesson: Les
   };
 }
 
-export const agenticOrgReady = () => Boolean(process.env.AGENTICORG_AGENT_ID && process.env.AGENTICORG_API_KEY);
+export const agenticOrgReady = () => Boolean(process.env.AGENTICORG_BASE_URL && process.env.AGENTICORG_AGENT_ID && process.env.AGENTICORG_API_KEY);

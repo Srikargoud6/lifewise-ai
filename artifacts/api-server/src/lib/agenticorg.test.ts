@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { afterEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 import { evaluateWithAgenticOrg } from "./agenticorg";
 import type { Lesson, Simulation } from "./lifewise-types";
 
@@ -7,6 +7,10 @@ const previousAgentId = process.env.AGENTICORG_AGENT_ID;
 const previousApiKey = process.env.AGENTICORG_API_KEY;
 const previousBaseUrl = process.env.AGENTICORG_BASE_URL;
 const originalFetch = globalThis.fetch;
+
+beforeEach(() => {
+  process.env.AGENTICORG_BASE_URL = "https://agenticorg.hackathon.pinelabs.com";
+});
 
 afterEach(() => {
   if (previousAgentId === undefined) delete process.env.AGENTICORG_AGENT_ID;
@@ -70,7 +74,6 @@ function validPayload(overrides: Record<string, unknown> = {}) {
 test("runs the configured AgenticOrg agent with redacted, non-identifying simulation input", async () => {
   process.env.AGENTICORG_AGENT_ID = "11111111-2222-3333-4444-555555555555";
   process.env.AGENTICORG_API_KEY = "  test-only-not-a-real-key  ";
-  delete process.env.AGENTICORG_BASE_URL;
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
   globalThis.fetch = async (input, init) => {
@@ -81,7 +84,8 @@ test("runs the configured AgenticOrg agent with redacted, non-identifying simula
 
   const { simulation, lesson } = fixtures();
   const result = await evaluateWithAgenticOrg(simulation, lesson);
-  assert.equal(requestUrl, "https://app.agenticorg.ai/api/v1/agents/11111111-2222-3333-4444-555555555555/run");
+  assert.equal(requestUrl, "https://agenticorg.hackathon.pinelabs.com/api/v1/agents/11111111-2222-3333-4444-555555555555/run");
+  assert.equal(requestInit?.redirect, "error");
   assert.equal(new Headers(requestInit?.headers).get("authorization"), "Bearer test-only-not-a-real-key");
   const body = JSON.parse(String(requestInit?.body)) as Record<string, any>;
   assert.equal(body.action, "process");
@@ -132,4 +136,26 @@ test("distinguishes a rejected key from missing run permission without exposing 
       !error.message.includes("agents:run") &&
       !error.message.includes("sensitive-provider-detail"),
   );
+});
+
+test("never sends credentials to a default deployment when the base URL is missing", async () => {
+  process.env.AGENTICORG_AGENT_ID = "11111111-2222-3333-4444-555555555555";
+  process.env.AGENTICORG_API_KEY = "test-only-not-a-real-key";
+  delete process.env.AGENTICORG_BASE_URL;
+  let called = false;
+  globalThis.fetch = async () => { called = true; throw new Error("Unexpected network call"); };
+  const { simulation, lesson } = fixtures();
+  await assert.rejects(evaluateWithAgenticOrg(simulation, lesson), /Set AGENTICORG_BASE_URL/);
+  assert.equal(called, false);
+});
+
+test("rejects a dashboard URL instead of treating it as an API origin", async () => {
+  process.env.AGENTICORG_AGENT_ID = "11111111-2222-3333-4444-555555555555";
+  process.env.AGENTICORG_API_KEY = "test-only-not-a-real-key";
+  process.env.AGENTICORG_BASE_URL = "https://agenticorg.hackathon.pinelabs.com/dashboard/agents";
+  let called = false;
+  globalThis.fetch = async () => { called = true; throw new Error("Unexpected network call"); };
+  const { simulation, lesson } = fixtures();
+  await assert.rejects(evaluateWithAgenticOrg(simulation, lesson), /only the website origin/);
+  assert.equal(called, false);
 });
