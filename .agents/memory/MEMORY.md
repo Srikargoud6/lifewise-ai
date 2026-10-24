@@ -2,3 +2,4 @@
 - [Managed AI output compatibility](managed-ai-output.md) — keep native-script validation local unless provider-side Unicode-pattern support is verified.
 - [Drizzle test schemas](drizzle-test-schema.md) — injected test connections must match the full schema module, including non-table exports.
 - [AgenticOrg deployment authentication](agenticorg-deployment-auth.md) — verify the user's deployment before diagnosing a rejected key; generic SDK defaults may target another service.
+- [GitHub transport authorization](github-transport.md) — connector attachment admission and the existing secure Git transport can have different authorization outcomes.
