@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useParams } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,98 +9,20 @@ import {
   useStartSimulation,
   type LearningLesson,
 } from '@workspace/api-client-react';
-import { Building2, Check, ExternalLink, HeartPulse, Landmark, Languages, Loader2, Play, Scale, TrendingUp, Vote, X, type LucideIcon } from 'lucide-react';
+import { ExternalLink, Languages, Loader2, Play, X } from 'lucide-react';
 import { useLearner } from '@/hooks/use-learner';
 import { useProgress } from '@/hooks/use-progress';
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/bits';
-import { QuestRail } from '@/components/rail';
+import { subjectHref } from '@/pages/learn-tracks';
 import { Quiz, day } from '@/components/quiz';
 import { errMsg } from '@/lib/lw';
-
-const SUBJECTS: { name: string; icon: LucideIcon; c: string; cd: string; blurb: string }[] = [
-  { name: 'Finance', icon: Landmark, c: '#58cc02', cd: '#43a102', blurb: 'Money, UPI, tax and scams' },
-  { name: 'Economy', icon: TrendingUp, c: '#1cb0f6', cd: '#1899d6', blurb: 'Prices, jobs and growth' },
-  { name: 'Health', icon: HeartPulse, c: '#f0455a', cd: '#c42a40', blurb: 'Body, mind and insurance' },
-  { name: 'Politics', icon: Vote, c: '#8b5cf6', cd: '#6a3fd0', blurb: 'Votes, parties and power' },
-  { name: 'Government', icon: Building2, c: '#e8741a', cd: '#b95510', blurb: 'Rights, schemes and offices' },
-  { name: 'Ethics', icon: Scale, c: '#14a39a', cd: '#0c7d76', blurb: 'Choices when nobody is looking' },
-];
-const OFFSETS = [0, 38, 58, 38, 0, -38, -58, -38];
-
-function useTitle(t: string) {
-  useEffect(() => {
-    document.title = t;
-    const description = `${t}. Free, authored life-skills learning for Indian learners, with practice quizzes and saved learning habits.`;
-    for (const [attribute, name, content] of [
-      ['name', 'description', description],
-      ['property', 'og:title', t],
-      ['property', 'og:description', description],
-    ]) {
-      let tag = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${name}"]`);
-      if (!tag) { tag = document.createElement('meta'); tag.setAttribute(attribute!, name!); document.head.append(tag); }
-      tag.content = content!;
-    }
-  }, [t]);
-}
+import { useLearningTitle as useTitle } from '@/hooks/use-learning-title';
 
 function EnglishNote() {
   return (
     <p className="flex items-center gap-2 text-xs font-bold text-mute" data-testid="text-english-note">
       <Languages className="h-4 w-4 text-sky" /> Lessons are in English. Your simulation coaching language is unchanged.
     </p>
-  );
-}
-
-export function LearnHome() {
-  useTitle('Learn | Lifewise Free Life-Skills Lessons');
-  const lib = useGetLearningLibrary();
-  const prog = useProgress();
-  const best = useMemo(() => new Map((prog.data?.lessons ?? []).map((l) => [l.lessonId, l])), [prog.data]);
-  const lessons = lib.data ?? [];
-  return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_19rem]">
-      <div className="order-2 min-w-0 lg:order-1">
-        <div className="mb-4"><EnglishNote /></div>
-        {lib.isLoading && <ListSkeleton rows={4} />}
-        {lib.isError && <ErrorState message={errMsg(lib.error)} onRetry={() => void lib.refetch()} />}
-        {lib.data && lessons.length === 0 && <EmptyState title="No lessons yet" body="The library returned nothing. Try again shortly." />}
-        <div className="space-y-10">
-          {SUBJECTS.map((s, si) => {
-            const ls = lessons.filter((l) => l.subject === s.name);
-            if (!ls.length) return null;
-            const done = ls.filter((l) => best.has(l.id)).length;
-            return (
-              <section key={s.name} aria-labelledby={`h-${s.name}`}>
-                <div className="flex items-center justify-between gap-3 rounded-2xl p-4 text-white" style={{ background: s.c, boxShadow: `0 4px 0 ${s.cd}` }}>
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-widest text-white/80">Unit {si + 1} / {done} of {ls.length} done</p>
-                    <h2 id={`h-${s.name}`} className="text-3xl font-bold">{s.name}</h2>
-                    <p className="text-sm font-bold text-white/90">{s.blurb}</p>
-                  </div>
-                  <s.icon className="h-12 w-12 shrink-0 text-white/80" aria-hidden />
-                </div>
-                <ol className="flex flex-col items-center gap-7 py-8">
-                  {ls.map((l, i) => {
-                    const b = best.get(l.id);
-                    const style = b ? { '--c': '#ffc21a', '--cd': '#d99a00' } : { '--c': s.c, '--cd': s.cd };
-                    return (
-                      <li key={l.id} className="rise flex flex-col items-center text-center" style={{ transform: `translateX(${OFFSETS[i % OFFSETS.length]}px)`, animationDelay: i * 50 + 'ms' }}>
-                        <Link href={`/learn/lesson/${l.id}`} data-testid={`card-lesson-${l.id}`} aria-label={`${l.title}. ${b ? `Best ${b.bestScore} of ${l.questions.length}` : 'Not attempted'}`} className="node" style={style as React.CSSProperties}>
-                          {b ? <Check className="h-9 w-9 text-ink" strokeWidth={3.5} /> : <s.icon className="h-9 w-9" />}
-                        </Link>
-                        <p className="mt-3 max-w-[11rem] text-sm font-black leading-tight text-ink">{l.title}</p>
-                        <p className="text-xs font-bold text-mute">{b ? `Best ${b.bestScore}/${l.questions.length} / ${b.attempts} tries` : 'Start'}</p>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </section>
-            );
-          })}
-        </div>
-      </div>
-      <div className="order-1 lg:sticky lg:top-20 lg:order-2 lg:self-start"><QuestRail /></div>
-    </div>
   );
 }
 
@@ -141,10 +63,10 @@ function Practice({ l }: { l: LearningLesson }) {
   );
 }
 
-function CloseBar({ label }: { label: string }) {
+function CloseBar({ label, href = '/learn', testid = 'link-back-library' }: { label: string; href?: string; testid?: string }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <Link href="/learn" data-testid="link-back-library" aria-label="Back to lessons" className="rounded-xl p-2 text-mute hover:bg-line/60"><X className="h-7 w-7" /></Link>
+      <Link href={href} data-testid={testid} aria-label="Back to lessons" className="rounded-xl p-2 text-mute hover:bg-line/60"><X className="h-7 w-7" /></Link>
       <span className="text-xs font-black uppercase tracking-widest text-mute">{label}</span>
     </div>
   );
@@ -161,7 +83,7 @@ export function LessonPage() {
   const showQuiz = started || !!saved;
   return (
     <div className="mx-auto max-w-2xl">
-      <CloseBar label={lesson?.subject ?? 'Lesson'} />
+      <CloseBar label={lesson?.subject ?? 'Lesson'} href={lesson ? subjectHref(lesson.subject) : '/learn'} />
       {lib.isLoading && <ListSkeleton rows={4} />}
       {lib.isError && <ErrorState message={errMsg(lib.error)} onRetry={() => void lib.refetch()} />}
       {lib.data && !lesson && <EmptyState title="Lesson not found" body="This lesson does not exist in the library."><Link href="/learn" className="chunk chunk-green">Back to lessons</Link></EmptyState>}
@@ -170,7 +92,7 @@ export function LessonPage() {
           {showQuiz ? (
             <>
               <h1 className="mb-4 text-3xl font-bold text-ink" data-testid="text-lesson-title">{lesson.title}</h1>
-              <Quiz key={lesson.id} kind="lesson" sourceId={lesson.id} questions={lesson.questions} saved={saved} footer={<Link href="/learn" className="chunk chunk-green">Continue</Link>} />
+              <Quiz key={lesson.id} kind="lesson" sourceId={lesson.id} questions={lesson.questions} saved={saved} footer={<Link href={subjectHref(lesson.subject)} className="chunk chunk-green">Continue</Link>} />
               <Practice l={lesson} />
               <button onClick={() => setStarted(false)} className="mt-6 text-sm font-black uppercase text-sky-d underline" data-testid="button-reread">Read the lesson again</button>
             </>

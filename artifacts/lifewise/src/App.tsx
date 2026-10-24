@@ -6,7 +6,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Practice from '@/pages/practice';
 import SimulationPage from '@/pages/simulation';
-import { LearnHome, LessonPage, DailyPage } from '@/pages/learn';
+import { LessonPage, DailyPage } from '@/pages/learn';
+import { LearnHome, TrackPage } from '@/pages/learn-tracks';
 import { ProgressPage } from '@/pages/progress';
 import { Shell } from '@/components/shell';
 import { LearnerProvider } from '@/hooks/use-learner';
@@ -22,6 +23,7 @@ function Router() {
           <Route path="/" component={LearnHome} />
           <Route path="/practice" component={Practice} />
           <Route path="/learn" component={LearnHome} />
+          <Route path="/learn/track/:subject" component={TrackPage} />
           <Route path="/learn/lesson/:id" component={LessonPage} />
           <Route path="/learn/daily" component={DailyPage} />
           <Route path="/learn/progress" component={ProgressPage} />

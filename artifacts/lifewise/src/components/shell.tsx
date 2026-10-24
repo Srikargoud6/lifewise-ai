@@ -22,7 +22,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const prog = useProgress();
   const x = xpOf(prog.data);
   const active = (h: string) => {
-    if (h === '/learn') return loc === '/' || loc === '/learn' || loc.startsWith('/learn/lesson') || loc.startsWith('/learn/daily');
+    if (h === '/learn') return loc === '/' || loc === '/learn' || loc.startsWith('/learn/lesson') || loc.startsWith('/learn/daily') || loc.startsWith('/learn/track');
     if (h === '/practice') return loc.startsWith('/practice') || loc.startsWith('/simulation');
     return loc.startsWith(h);
   };

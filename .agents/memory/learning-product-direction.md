@@ -17,3 +17,14 @@ and withheld GitHub-push approval until they could review the design.
 learning and practice, and show real earned progress rather than fabricated
 gamification. Preview changes in the workspace, ask for design approval, and
 do not interpret implementation requests as approval to push the new design.
+
+The homepage must show the six subject choices compactly, with lessons opened
+only after selecting a subject. Do not expand every subject's lessons into
+one long homepage path or isolate small lesson icons in wide empty columns.
+
+**Why:** The user found the long path visually unappealing and could not
+discover the available tracks without scrolling past individual lessons.
+
+**How to apply:** Prioritize subject discoverability in the first desktop
+viewport, keep mobile choices compact, and use the available width for
+selected-subject lesson content.
