@@ -112,6 +112,11 @@ export interface LearningResult {
   day: string;
   review: LearningReview[];
   newAchievements: LearningAchievement[];
+  /**
+     * XP credited by this submission. Retakes credit only improvements to a source's best score.
+     * @minimum 0
+     */
+  xpEarned?: number;
 }
 
 export interface LearningCompletion {
@@ -131,6 +136,18 @@ export interface LearningProgress {
   lessons: LearningCompletion[];
   achievements: LearningAchievement[];
   dailyResult?: LearningResult;
+  /** @minimum 0 */
+  totalXp: number;
+  /** @minimum 0 */
+  todayXp: number;
+  /** @minimum 1 */
+  dailyGoalXp: number;
+  /**
+     * Best score for today's daily challenge, retained across lower-scoring retakes.
+     * @minimum 0
+     * @maximum 5
+     */
+  dailyBestScore?: number;
 }
 
 export interface HealthStatus {

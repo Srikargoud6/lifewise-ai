@@ -18,4 +18,9 @@ export interface LearningResult {
   day: string;
   review: LearningReview[];
   newAchievements: LearningAchievement[];
+  /**
+     * XP credited by this submission. Retakes credit only improvements to a source's best score.
+     * @minimum 0
+     */
+  xpEarned?: number;
 }

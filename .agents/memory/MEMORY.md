@@ -3,3 +3,4 @@
 - [Drizzle test schemas](drizzle-test-schema.md) — injected test connections must match the full schema module, including non-table exports.
 - [AgenticOrg deployment authentication](agenticorg-deployment-auth.md) — verify the user's deployment before diagnosing a rejected key; generic SDK defaults may target another service.
 - [GitHub transport authorization](github-transport.md) — connector attachment admission and the existing secure Git transport can have different authorization outcomes.
+- [Learning product direction](learning-product-direction.md) — Duolingo-inspired Lifewise; no mentor/traces/proof learner modules; wait for design approval before GitHub pushes.

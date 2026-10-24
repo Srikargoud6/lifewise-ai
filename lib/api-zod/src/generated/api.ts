@@ -44,6 +44,20 @@ export const GetDailyChallengeResponse = zod.object({
 })
 
 
+export const getLearningProgressResponseLessonsItemLastResultXpEarnedMin = 0;
+
+export const getLearningProgressResponseDailyResultXpEarnedMin = 0;
+
+export const getLearningProgressResponseTotalXpMin = 0;
+
+export const getLearningProgressResponseTodayXpMin = 0;
+
+
+export const getLearningProgressResponseDailyBestScoreMin = 0;
+export const getLearningProgressResponseDailyBestScoreMax = 5;
+
+
+
 export const GetLearningProgressResponse = zod.object({
   "today": zod.string(),
   "timezone": zod.string(),
@@ -74,7 +88,8 @@ export const GetLearningProgressResponse = zod.object({
   "days": zod.number().int(),
   "title": zod.string(),
   "awardedAt": zod.string()
-}))
+})),
+  "xpEarned": zod.number().int().min(getLearningProgressResponseLessonsItemLastResultXpEarnedMin).optional().describe('XP credited by this submission. Retakes credit only improvements to a source\'s best score.')
 })
 })),
   "achievements": zod.array(zod.object({
@@ -101,8 +116,13 @@ export const GetLearningProgressResponse = zod.object({
   "days": zod.number().int(),
   "title": zod.string(),
   "awardedAt": zod.string()
-}))
-}).optional()
+})),
+  "xpEarned": zod.number().int().min(getLearningProgressResponseDailyResultXpEarnedMin).optional().describe('XP credited by this submission. Retakes credit only improvements to a source\'s best score.')
+}).optional(),
+  "totalXp": zod.number().int().min(getLearningProgressResponseTotalXpMin),
+  "todayXp": zod.number().int().min(getLearningProgressResponseTodayXpMin),
+  "dailyGoalXp": zod.number().int().min(1),
+  "dailyBestScore": zod.number().int().min(getLearningProgressResponseDailyBestScoreMin).max(getLearningProgressResponseDailyBestScoreMax).optional().describe('Best score for today\'s daily challenge, retained across lower-scoring retakes.')
 })
 
 
@@ -128,6 +148,10 @@ export const SubmitLearningQuizBody = zod.object({
   "answers": zod.array(zod.number().int().min(submitLearningQuizBodyAnswersItemMin).max(submitLearningQuizBodyAnswersItemMax)).min(submitLearningQuizBodyAnswersMin).max(submitLearningQuizBodyAnswersMax)
 })
 
+export const submitLearningQuizResponseXpEarnedMin = 0;
+
+
+
 export const SubmitLearningQuizResponse = zod.object({
   "id": zod.string(),
   "kind": zod.enum(['lesson', 'daily']),
@@ -147,7 +171,8 @@ export const SubmitLearningQuizResponse = zod.object({
   "days": zod.number().int(),
   "title": zod.string(),
   "awardedAt": zod.string()
-}))
+})),
+  "xpEarned": zod.number().int().min(submitLearningQuizResponseXpEarnedMin).optional().describe('XP credited by this submission. Retakes credit only improvements to a source\'s best score.')
 })
 
 

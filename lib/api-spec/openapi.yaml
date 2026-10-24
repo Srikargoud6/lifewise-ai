@@ -351,6 +351,10 @@ components:
         day: { type: string }
         review: { type: array, items: { $ref: "#/components/schemas/LearningReview" } }
         newAchievements: { type: array, items: { $ref: "#/components/schemas/LearningAchievement" } }
+        xpEarned:
+          type: integer
+          minimum: 0
+          description: XP credited by this submission. Retakes credit only improvements to a source's best score.
     LearningCompletion:
       type: object
       required: [lessonId, bestScore, attempts, lastResult]
@@ -361,7 +365,7 @@ components:
         lastResult: { $ref: "#/components/schemas/LearningResult" }
     LearningProgress:
       type: object
-      required: [today, timezone, currentStreak, bestStreak, todayCompleted, learningDays, lessons, achievements]
+      required: [today, timezone, currentStreak, bestStreak, todayCompleted, learningDays, lessons, achievements, totalXp, todayXp, dailyGoalXp]
       properties:
         today: { type: string }
         timezone: { type: string }
@@ -372,6 +376,14 @@ components:
         lessons: { type: array, items: { $ref: "#/components/schemas/LearningCompletion" } }
         achievements: { type: array, items: { $ref: "#/components/schemas/LearningAchievement" } }
         dailyResult: { $ref: "#/components/schemas/LearningResult" }
+        totalXp: { type: integer, minimum: 0 }
+        todayXp: { type: integer, minimum: 0 }
+        dailyGoalXp: { type: integer, minimum: 1 }
+        dailyBestScore:
+          type: integer
+          minimum: 0
+          maximum: 5
+          description: Best score for today's daily challenge, retained across lower-scoring retakes.
     HealthStatus:
       type: object
       required: [status]

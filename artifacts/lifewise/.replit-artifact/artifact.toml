@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
 title = "Lifewise AI"
-description = "A mobile-first real-life skills simulator with five learning tracks, personalized coaching, human mentor approval, and transparent activity logs."
+description = "A playful life-skills learning app with lessons, daily quizzes, practical simulations, XP, daily goals, streaks and milestone badges."
 version = "1.0.0"
 id = "artifacts/lifewise"
 router = "path"

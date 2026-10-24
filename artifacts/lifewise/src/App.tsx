@@ -4,15 +4,13 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import Home from '@/pages/home';
+import Practice from '@/pages/practice';
 import SimulationPage from '@/pages/simulation';
-import Approvals from '@/pages/approvals';
-import Observatory from '@/pages/observatory';
-import { LearnHome, LessonPage, DailyPage, ProgressPage } from '@/pages/learn';
-import Proof from '@/pages/proof';
+import { LearnHome, LessonPage, DailyPage } from '@/pages/learn';
+import { ProgressPage } from '@/pages/progress';
 import { Shell } from '@/components/shell';
 import { LearnerProvider } from '@/hooks/use-learner';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
 
@@ -21,15 +19,16 @@ function Router() {
     <Shell>
       <RoutedErrorBoundary>
         <Switch>
-          <Route path="/" component={Home} />
+          <Route path="/" component={LearnHome} />
+          <Route path="/practice" component={Practice} />
           <Route path="/learn" component={LearnHome} />
           <Route path="/learn/lesson/:id" component={LessonPage} />
           <Route path="/learn/daily" component={DailyPage} />
           <Route path="/learn/progress" component={ProgressPage} />
           <Route path="/simulation/:id" component={SimulationPage} />
-          <Route path="/approvals" component={Approvals} />
-          <Route path="/observatory" component={Observatory} />
-          <Route path="/proof" component={Proof} />
+          <Route path="/approvals"><Redirect to="/learn/progress" /></Route>
+          <Route path="/observatory"><Redirect to="/learn/progress" /></Route>
+          <Route path="/proof"><Redirect to="/" /></Route>
           <Route component={NotFound} />
         </Switch>
       </RoutedErrorBoundary>

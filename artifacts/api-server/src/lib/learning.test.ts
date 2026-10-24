@@ -73,6 +73,58 @@ test("reading adds no days; same-day repeats, consecutive days, gaps and best st
   assert.equal(gap.bestStreak, 2);
   assert.equal(gap.lessons[0]!.attempts, 4);
 });
+test("XP rewards first completion and best-score improvements, not repeat farming", () => {
+  const day = "2026-10-24";
+  const first = applyCompletion(emptyProgress(day), { ...result(day), score: 1 });
+  assert.equal(first.result.xpEarned, 30);
+  assert.equal(first.progress.totalXp, 30);
+  const improved = applyCompletion(first.progress, { ...result(day), score: 3 });
+  assert.equal(improved.result.xpEarned, 20);
+  assert.equal(improved.progress.todayXp, 50);
+  const worse = applyCompletion(improved.progress, { ...result(day), score: 0 });
+  const repeat = applyCompletion(worse.progress, { ...result(day), score: 3 });
+  assert.equal(worse.result.xpEarned, 0);
+  assert.equal(repeat.result.xpEarned, 0);
+  assert.equal(repeat.progress.totalXp, 50);
+  const tomorrow = progressForDay(repeat.progress, "2026-10-25");
+  assert.equal(tomorrow.totalXp, 50);
+  assert.equal(tomorrow.todayXp, 0);
+  assert.equal(tomorrow.dailyGoalXp, 30);
+});
+
+test("daily XP retains best scores across retakes and resets only its daily source", () => {
+  const daily = (day: string, score: number): LearningResult => ({
+    ...result(day), kind: "daily", sourceId: `daily-v1-${day}`, score, total: 5,
+  });
+  let p = emptyProgress("2026-10-24");
+  for (const [score, earned] of [[3, 50], [1, 0], [5, 20], [5, 0]]) {
+    const next = applyCompletion(p, daily("2026-10-24", score!));
+    assert.equal(next.result.xpEarned, earned);
+    p = next.progress;
+  }
+  assert.equal(p.totalXp, 70);
+  assert.equal(p.dailyBestScore, 5);
+  const next = applyCompletion(p, daily("2026-10-25", 0));
+  assert.equal(next.result.xpEarned, 20);
+  assert.equal(next.progress.totalXp, 90);
+  assert.equal(next.progress.todayXp, 20);
+  assert.equal(next.progress.currentStreak, 2);
+});
+
+test("legacy progress keeps streaks and saved lesson XP without invented historical daily rewards", () => {
+  const oldResult = result("2026-10-24");
+  const legacy = {
+    today: oldResult.day, timezone: "Asia/Kolkata", currentStreak: 1, bestStreak: 1,
+    todayCompleted: true, learningDays: [oldResult.day], achievements: [],
+    lessons: [{ lessonId: oldResult.sourceId, bestScore: 3, attempts: 1, lastResult: oldResult }],
+  };
+  const migrated = progressForDay(legacy, oldResult.day);
+  assert.equal(migrated.totalXp, 50);
+  assert.equal(migrated.currentStreak, 1);
+  assert.equal(migrated.todayXp, 0);
+  assert.equal(applyCompletion(legacy, { ...oldResult, score: 3 }).result.xpEarned, 0);
+});
+
 test("49→50 and 99→100 award once; awards and best survive a missed day", () => {
   let p = emptyProgress("2026-01-01");
   let awards = 0;
@@ -112,7 +164,7 @@ test("PostgreSQL: concurrent replay, one-day credit, ownership, rollback, persis
     ]);
     const input = { requestId: randomUUID(), kind: "lesson" as const, sourceId: learningLessons[0]!.id, answers: [1, 2, 0] };
     const [a, replay] = await Promise.all([submitQuiz("owner_a", "fixture_learner_a", input, d1), submitQuiz("owner_a", "fixture_learner_a", input, d2)]);
-    assert.deepEqual(a, replay); assert.equal(a.score, 3);
+    assert.deepEqual(a, replay); assert.equal(a.score, 3); assert.equal(a.xpEarned, 50);
     await assert.rejects(submitQuiz("owner_b", "fixture_learner_a", { ...input, requestId: randomUUID() }, d1), { status: 404 });
     await assert.rejects(submitQuiz("owner_a", "fixture_learner_a", { ...input, answers: [0, 0, 0] }, d1), { status: 409 });
     await assert.rejects(submitQuiz("owner_a", "fixture_learner_a", { ...input, requestId: randomUUID(), answers: [0] }, d1), { status: 400 });
@@ -123,6 +175,8 @@ test("PostgreSQL: concurrent replay, one-day credit, ownership, rollback, persis
     assert.equal(progress.currentStreak, 1); assert.equal(progress.learningDays.length, 1);
     assert.equal(progress.lessons[0]!.attempts, 2); assert.equal(progress.lessons[0]!.bestScore, 3);
     assert.equal(progress.lessons[0]!.lastResult.score, 0);
+    assert.equal(progress.totalXp, 50); assert.equal(progress.todayXp, 50);
+    assert.equal(progress.lessons[0]!.lastResult.xpEarned, 0);
     const attempts = await d1.select().from(lifewiseRecords).where(eq(lifewiseRecords.kind, "learning_attempt"));
     assert.equal(attempts.length, 2); // rejected writes and replay add nothing
     for (const n of [50, 100]) {

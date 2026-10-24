@@ -63,30 +63,31 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
   }
 
   const chip = (active: boolean) =>
-    `rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${active ? 'border-navy bg-navy text-white' : 'border-input bg-card hover:border-teal'}`;
+    `rounded-2xl border-2 px-3 py-2 text-sm font-bold transition-colors ${active ? 'border-sky bg-sky/10 text-sky-d shadow-[0_3px_0_#1cb0f6]' : 'border-line bg-white text-ink hover:bg-cream'}`;
+  const field = 'mt-1 w-full rounded-2xl border-2 border-line bg-white px-3 py-3 font-semibold outline-none focus:border-sky';
 
   return (
     <LearnerCtx.Provider value={{ state: data, isLoading, requireLearner, refresh }}>
       {children}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto border-2 border-navy bg-paper sm:max-w-md" data-testid="dialog-onboarding">
-          <DialogTitle className="font-display text-2xl font-extrabold text-navy">Log your flight</DialogTitle>
-          <DialogDescription className="text-sm">Five seconds. This creates a profile tied to this browser's cookie.</DialogDescription>
-          <div className="flex gap-2 rounded-lg bg-amber/10 p-3 text-xs text-foreground/80">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber" />
+        <DialogContent className="max-h-[92dvh] overflow-y-auto border-2 border-line bg-cream sm:max-w-md" data-testid="dialog-onboarding">
+          <DialogTitle className="text-3xl font-bold text-ink">Save your progress</DialogTitle>
+          <DialogDescription className="text-sm">Five seconds. Your XP, streak and badges stay with this browser.</DialogDescription>
+          <div className="flex gap-2 rounded-lg bg-sun/25 p-3 text-xs font-bold text-ink/80">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-sun-d" />
             <span>Unverified profile. No password, no login, and your contact is never shown publicly.</span>
           </div>
           <form onSubmit={submit} className="space-y-4">
-            <label className="block text-sm font-semibold">
+            <label className="block text-sm font-black">
               Name
-              <input data-testid="input-name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2.5 font-normal outline-none focus:border-teal focus:ring-2 focus:ring-teal/30" />
+              <input data-testid="input-name" maxLength={80} value={name} onChange={(e) => setName(e.target.value)} className={field} />
             </label>
-            <label className="block text-sm font-semibold">
+            <label className="block text-sm font-black">
               Email or phone
-              <input data-testid="input-contact" maxLength={120} value={contact} onChange={(e) => setContact(e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-card px-3 py-2.5 font-normal outline-none focus:border-teal focus:ring-2 focus:ring-teal/30" />
+              <input data-testid="input-contact" maxLength={120} value={contact} onChange={(e) => setContact(e.target.value)} className={field} />
             </label>
             <fieldset>
-              <legend className="mb-1 text-sm font-semibold">Where are you in life</legend>
+              <legend className="mb-1 text-sm font-black">Where are you in life</legend>
               <div className="flex flex-wrap gap-2">
                 {AGE_GROUPS.map((a) => (
                   <button type="button" key={a} data-testid={`chip-age-${a.replace(/\s/g, '-')}`} onClick={() => setAgeGroup(a)} className={chip(a === ageGroup)}>{a}</button>
@@ -94,15 +95,15 @@ export function LearnerProvider({ children }: { children: ReactNode }) {
               </div>
             </fieldset>
             <fieldset>
-              <legend className="mb-1 text-sm font-semibold">Coaching language</legend>
+              <legend className="mb-1 text-sm font-black">Coaching language</legend>
               <div className="flex flex-wrap gap-2">
                 {LANGS.map((l) => (
                   <button type="button" key={l} data-testid={`chip-lang-${l}`} onClick={() => setLanguage(l)} className={chip(l === language)}>{l}</button>
                 ))}
               </div>
             </fieldset>
-            {error && <p role="alert" data-testid="text-onboarding-error" className="text-sm font-medium text-destructive">{error}</p>}
-            <button data-testid="button-register" disabled={register.isPending} className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber px-4 py-3 font-bold text-white transition-transform active:scale-[.98] disabled:opacity-60">
+            {error && <p role="alert" data-testid="text-onboarding-error" className="text-sm font-bold text-berry-d">{error}</p>}
+            <button data-testid="button-register" disabled={register.isPending} className="chunk chunk-green chunk-block">
               {register.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Start practising
             </button>
           </form>

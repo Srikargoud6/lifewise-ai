@@ -1,13 +1,15 @@
 # Lifewise AI
 
-The Real-World Survival Simulator for Skills Schools Never Teach.
+Learn for life. Decide with confidence.
 
 ## Product
 
-Mobile-first educational practice for Indian school students, college students,
-and first-job learners. Five three-decision tracks cover finance, economy,
-health, politics and civic sense, and ethics. Coaching is available in English,
-Hinglish, Hindi, Kannada, Telugu, and Tamil.
+Mobile-first life-skills learning for Indian school students, college students,
+and first-job learners. Eighteen lessons cover finance, economy, health,
+politics, government, and ethics, with lesson quizzes, a Daily 5 challenge,
+saved XP, daily goals, streaks and 50/100-day digital badges. Five three-decision
+simulations provide practical experience. Simulation coaching is available in
+English, Hinglish, Hindi, Kannada, Telugu, and Tamil.
 
 ## Current delivery and limits
 
@@ -17,17 +19,18 @@ This is a working **hackathon demo, not a production-certified service**.
   progress, localized coaching, on-demand ElevenLabs speech, and device-voice fallback.
 - Name/contact onboarding creates an **unverified browser profile**, not a
   verified identity or a secure user account.
-- The mentor console is explicitly public demo review, not authenticated
-  role-based access. Do not present these badges as accredited certifications.
-- Historical Chanakya_LifeCoach runs remain explicitly labeled local demos.
-  New completed simulations can request AgenticOrg evaluation with an explicit
-  user click and disclosure, followed by the separate demo human-approval gate.
-  The adapter is implemented, but live authorization is not yet verified.
-  This project uses the Pine Labs hackathon AgenticOrg deployment:
+- The learner frontend contains learning, practice, progress and profile
+  controls. Legacy review, observatory and proof views are not mounted;
+  their old URLs redirect to learning/progress. Simulation results are not
+  gated by mentor review or checkout.
+- The legacy AgenticOrg adapter and historical records are retained, but its
+  routes are not mounted; retired review/payment/proof endpoints return 410.
+  The learner frontend does not invoke them. Live authorization
+  has not been verified. The configured deployment is
   `https://agenticorg.hackathon.pinelabs.com`. Set `AGENTICORG_BASE_URL` to that
   origin, not the dashboard URL. Agent ID and API key stay in server Secrets.
-- ₹9 checkout uses a non-payable demonstration QR. Test verification updates
-  test-only membership and never contributes to the real-paying-users counter.
+- Historical ₹9 checkout/payment code is retained but its endpoints are retired;
+  the learner UI has no checkout, QR, certificate or download gate.
 - AI scenario generation and custom translation use the configured managed
   OpenAI integration. Generated scenarios have strict three-step output
   validation; native-language translations preserve the selected script.
@@ -35,10 +38,12 @@ This is a working **hackathon demo, not a production-certified service**.
   account. Audio is generated on demand from server-owned simulation feedback,
   capped, rate-limited and cached in memory; retries may use provider credits.
   API credentials are read only by the server and never sent to the browser.
-- Free learner IQ results do not require payment. The demo badge and action kit
-  require human approval; download/print additionally require test checkout.
-- Proof counters are calculated from actual database rows. No fabricated
-  external signups, agent activity, mentor decisions or payments are seeded.
+- Free simulation results do not require payment. Learning badges are
+  non-monetary habit milestones, not accredited certifications.
+- XP is server-calculated: first completion of a lesson/daily source earns
+  20 XP plus 10 per correct answer. Retakes earn only improvements over the
+  saved best score. Simulations do not award XP. Daily goals reset at the
+  server's Asia/Kolkata date boundary; lifetime XP does not.
 
 ## Run and operate
 
@@ -61,11 +66,11 @@ This is a working **hackathon demo, not a production-certified service**.
   action-kit templates and human-authored coaching translations.
 - `artifacts/api-server/src/routes/lifewise-learning.ts` — browser learner
   registration, custom scenarios, simulation progression and coaching.
-- `artifacts/api-server/src/routes/lifewise-governance.ts` — local evaluation,
-  demo approvals, test checkout, redacted proof logs.
+- `artifacts/api-server/src/routes/lifewise-governance.ts` — unmounted legacy
+  evaluation, approvals, checkout and logs; historical data is preserved.
 - `lib/db/src/schema/lifewise.ts` — timestamped workflow documents.
-- `artifacts/lifewise/src/pages/` — learning, simulation, mentor, observatory,
-  and proof views.
+- `artifacts/lifewise/src/pages/` — learning journey, lessons, daily quizzes,
+  saved progress and simulation practice.
 - `artifacts/lifewise/src/index.css` — visual theme.
 
 ## Integrity and privacy decisions
@@ -120,10 +125,8 @@ This is a working **hackathon demo, not a production-certified service**.
 
 ## Before production launch
 
-Add managed authentication and enforce mentor authorization server-side.
-Verify AgenticOrg authorization and output against the configured deployment,
-then connect Pine Labs merchant checkout using current provider documentation and server-verified
-payment status/webhook signatures. Add appropriate student privacy, consent,
+Add managed authentication and safe profile/account linking across devices.
+Audit remaining learner endpoints for production authorization and add student privacy, consent,
 retention and support policies. ElevenLabs speech needs the project secret and
 may use account credits; the browser device voice remains a fallback.
 
