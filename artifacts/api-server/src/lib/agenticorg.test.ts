@@ -69,7 +69,7 @@ function validPayload(overrides: Record<string, unknown> = {}) {
 
 test("runs the configured AgenticOrg agent with redacted, non-identifying simulation input", async () => {
   process.env.AGENTICORG_AGENT_ID = "11111111-2222-3333-4444-555555555555";
-  process.env.AGENTICORG_API_KEY = "test-only-not-a-real-key";
+  process.env.AGENTICORG_API_KEY = "  test-only-not-a-real-key  ";
   delete process.env.AGENTICORG_BASE_URL;
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
@@ -115,6 +115,21 @@ test("returns a clear scope error without leaking the provider response", async 
     evaluateWithAgenticOrg(simulation, lesson),
     (error: unknown) => error instanceof Error &&
       error.message.includes("agents:run or agents:write") &&
+      !error.message.includes("sensitive-provider-detail"),
+  );
+});
+
+test("distinguishes a rejected key from missing run permission without exposing the response", async () => {
+  process.env.AGENTICORG_AGENT_ID = "11111111-2222-3333-4444-555555555555";
+  process.env.AGENTICORG_API_KEY = "test-only-not-a-real-key";
+  globalThis.fetch = async () => new Response("sensitive-provider-detail", { status: 401 });
+  const { simulation, lesson } = fixtures();
+  await assert.rejects(
+    evaluateWithAgenticOrg(simulation, lesson),
+    (error: unknown) => error instanceof Error &&
+      error.message.includes("401 Unauthorized") &&
+      error.message.includes("same AgenticOrg website") &&
+      !error.message.includes("agents:run") &&
       !error.message.includes("sensitive-provider-detail"),
   );
 });

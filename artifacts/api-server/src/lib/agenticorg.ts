@@ -48,7 +48,7 @@ function parseOutput(value: unknown): Record<string, unknown> | undefined {
 
 function agentCredentials(): { agentId: string; apiKey: string; baseUrl: string } {
   const agentId = process.env.AGENTICORG_AGENT_ID?.trim();
-  const apiKey = process.env.AGENTICORG_API_KEY;
+  const apiKey = process.env.AGENTICORG_API_KEY?.trim();
   if (!agentId || !apiKey) throw new HttpError(503, "AgenticOrg is not configured. Add the agent ID and API key in Replit Secrets.");
   if (agentId.length <= 30 || !agentId.includes("-")) {
     throw new HttpError(503, "AGENTICORG_AGENT_ID must be the AgenticOrg agent UUID, not its name or agent type.");
@@ -125,8 +125,11 @@ export async function evaluateWithAgenticOrg(simulation: Simulation, lesson: Les
     throw new HttpError(503, "AgenticOrg could not be reached. No review was saved; you can retry.");
   }
 
-  if (response.status === 401 || response.status === 403) {
-    throw new HttpError(503, "AgenticOrg rejected the key or run permission. Check that it can run agents (agents:run or agents:write).");
+  if (response.status === 401) {
+    throw new HttpError(503, "AgenticOrg returned 401 Unauthorized: the API key was not accepted by the configured deployment. Check that the key is valid, unexpired, and issued by the same AgenticOrg website as the configured base URL.");
+  }
+  if (response.status === 403) {
+    throw new HttpError(503, "AgenticOrg returned 403 Forbidden: this credential is not permitted to run this agent. Check agents:run or agents:write permission and access to the agent's tenant/company.");
   }
   if (response.status === 404) throw new HttpError(503, "AgenticOrg could not find this agent in the configured deployment. Check its ID and base URL.");
   if (response.status === 429) throw new HttpError(429, "AgenticOrg is rate-limited. Please try again later.");
