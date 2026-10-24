@@ -498,6 +498,8 @@ components:
         toolsCalled: { type: array, items: { type: string } }
         reasoningSteps: { type: array, items: { type: string } }
         actions: { type: array, items: { type: string } }
+        externalRunId: { type: string }
+        riskFlags: { type: array, items: { type: string } }
         confidenceScore: { type: number }
         mastery: { type: integer }
         impact: { type: integer }

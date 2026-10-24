@@ -277,7 +277,6 @@ export default function SimulationPage() {
   const [agentErr, setAgentErr] = useState<string | null>(null);
   const [localRun, setLocalRun] = useState<AgentRun | null>(null);
   const [paidLocal, setPaidLocal] = useState(false);
-  const ran = useRef<string | null>(null);
   const agentRef = useRef(agent.mutateAsync);
   agentRef.current = agent.mutateAsync;
 
@@ -292,12 +291,8 @@ export default function SimulationPage() {
       const r = await agentRef.current({ data: { simulationId: id } });
       setLocalRun(r);
       await Promise.all([qc.invalidateQueries({ queryKey: getGetAgentRunsQueryKey() }), qc.invalidateQueries({ queryKey: getGetApprovalsQueryKey() })]);
-    } catch (e) { setAgentErr(errMsg(e)); ran.current = null; }
+    } catch (e) { setAgentErr(errMsg(e)); }
   }, [id, qc]);
-
-  useEffect(() => {
-    if (done && ran.current !== id) { ran.current = id; void fire(); }
-  }, [done, id, fire]);
 
   async function choose(choiceId: string) {
     if (!sim || decide.isPending) return;
@@ -383,12 +378,25 @@ export default function SimulationPage() {
           </section>
 
           <section className="rise space-y-4" data-testid="section-kit">
-            {!run && !agentErr && <div className="space-y-2"><p className="flex items-center gap-2 text-sm font-semibold text-navy"><Loader2 className="h-4 w-4 animate-spin" /> Chanakya is evaluating your run...</p><Skeleton className="h-28 w-full rounded-xl" /></div>}
-            {agentErr && <ErrorState message={agentErr} onRetry={() => { ran.current = id; void fire(); }} />}
+            {!run && !agentErr && (
+              <div className="rounded-2xl border bg-card p-5">
+                <p className="font-display text-xl font-bold text-navy">Get your AgenticOrg coaching review</p>
+                <p className="mt-2 text-sm text-muted-foreground">Your scenario, selected choices, and rubric feedback will be sent to AgenticOrg. Don’t include personal details. This request may use model credits. It is educational feedback, not professional advice or certification; a human mentor must still review the result.</p>
+                <button data-testid="button-agenticorg-evaluate" disabled={agent.isPending} onClick={() => void fire()} className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-teal px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
+                  {agent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {agent.isPending ? 'Requesting evaluation…' : 'Send to AgenticOrg for evaluation'}
+                </button>
+              </div>
+            )}
+            {agentErr && <ErrorState message={agentErr} onRetry={() => void fire()} />}
+            {run?.provider.startsWith('LOCAL_DEMO') && (
+              <p className="rounded-xl border border-amber bg-amber/10 p-4 text-sm">This saved evaluation used the earlier local demo. Start a new simulation to request a live AgenticOrg evaluation.</p>
+            )}
             {run && !approved && !isRejected(run) && (
               <div data-testid="status-awaiting" className="rounded-2xl border-2 border-dashed border-amber bg-amber/10 p-5">
                 <p className="flex items-center gap-2 font-display text-xl font-bold text-navy"><Hourglass className="h-5 w-5 text-amber" /> Awaiting mentor review</p>
                 <p className="mt-1 text-sm text-muted-foreground">Your badge and action kit unlock after a human reviews your plan. This is a demo review, not a certification. Open the mentor queue in another tab; this page updates by itself.</p>
+                {!!run.riskFlags?.length && <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-destructive">{run.riskFlags.map((flag, index) => <li key={index}>{flag}</li>)}</ul>}
                 <Link href="/approvals" data-testid="link-mentor-queue" className="mt-3 inline-block text-sm font-bold text-teal underline">Go to mentor queue</Link>
               </div>
             )}
@@ -408,6 +416,7 @@ export default function SimulationPage() {
                   <ol className="mt-3 space-y-2">
                     {run.actions.map((a, i) => <li key={i} data-testid={`text-action-${i}`} className="flex gap-3"><span className="font-display text-xl font-extrabold text-amber">{i + 1}</span><span>{a}</span></li>)}
                   </ol>
+                  {!!run.riskFlags?.length && <ul className="mt-3 list-disc rounded-lg bg-amber/10 p-3 pl-7 text-sm">{run.riskFlags.map((flag, index) => <li key={index}>{flag}</li>)}</ul>}
                   {run.mentorNote && <p data-testid="text-mentor-note" className="mt-3 rounded-lg bg-secondary p-3 text-sm"><strong>Mentor note:</strong> {run.mentorNote}</p>}
                 </div>
                 <PaymentPanel sim={sim} run={run} paid={paid} onPaid={() => setPaidLocal(true)} />

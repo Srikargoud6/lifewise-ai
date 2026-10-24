@@ -20,7 +20,7 @@ export default function Observatory() {
       </div>
       {q.isLoading && <ListSkeleton />}
       {q.isError && <ErrorState message={errMsg(q.error)} onRetry={() => void q.refetch()} />}
-      {q.data && q.data.length === 0 && <EmptyState icon={<Cpu className="h-6 w-6" />} title="No traces yet" body="Finish a simulation and the evaluator agent's trace will appear here." />}
+      {q.data && q.data.length === 0 && <EmptyState icon={<Cpu className="h-6 w-6" />} title="No traces yet" body="Finish a simulation and request an AgenticOrg evaluation to see its trace here." />}
       <div className="space-y-3">
         {q.data?.map((r) => (
           <article key={r.id} data-testid={`card-run-${r.id}`} className="rounded-2xl border bg-card">
@@ -48,6 +48,8 @@ export default function Observatory() {
                   <p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-amber">Proposed actions</p>
                   <ul className="list-disc pl-5">{r.actions.map((a, i) => <li key={i}>{a}</li>)}</ul>
                 </div>
+                {!!r.riskFlags?.length && <div className="rounded-lg bg-amber/10 p-3"><p className="mb-1 font-mono text-[11px] uppercase tracking-widest text-amber">Risk flags</p><ul className="list-disc pl-5">{r.riskFlags.map((flag, i) => <li key={i}>{flag}</li>)}</ul></div>}
+                {r.externalRunId && <p className="font-mono text-xs text-muted-foreground">AgenticOrg run: {r.externalRunId}</p>}
               </div>
             )}
           </article>

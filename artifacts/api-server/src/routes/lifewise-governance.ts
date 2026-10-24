@@ -10,6 +10,7 @@ import {
 import { lessons } from "../lib/curriculum";
 import { aiReady } from "../lib/lifewise-ai";
 import { elevenLabsReady } from "../lib/elevenlabs";
+import { agenticOrgReady, evaluateWithAgenticOrg } from "../lib/agenticorg";
 import {
   browser, getRecord, getRecords, insertRecord, saveRecord, now, uid,
   requireLearner, ownedSimulation, HttpError, publicName, publicRun,
@@ -17,7 +18,8 @@ import {
 import type { AgentRun, Audit, Learner, Payment, Simulation, Lesson } from "../lib/lifewise-types";
 
 const router: IRouter = Router();
-const tools = ["evaluate_simulation_choices", "calculate_real_world_impact", "generate_survival_checklist", "propose_certification_for_hitl"];
+type AgentRunReservation = { status: "RUNNING" | "FAILED" | "COMPLETED"; startedAt: string };
+const reservationIdFor = (simulationId: string) => `agent_run_lock_${simulationId}`;
 
 router.post("/agent/run", async (req, res): Promise<void> => {
   const input = RunAgentBody.parse(req.body);
@@ -33,31 +35,64 @@ router.post("/agent/run", async (req, res): Promise<void> => {
     if (custom?.owner === owner) lesson = custom.data.lesson;
   }
   if (!lesson) throw new HttpError(404, "Scenario curriculum not found.");
-  const actions = lesson.actions.map((action, i) => {
-    const ix = sim.track.steps[i]!.choices.findIndex((c) => c.id === sim.choices[i]);
-    return (lesson.answers[i]![ix]!.quality < 100 ? "Revisit this decision with a mentor: " : "") + action;
+  const reservationId = reservationIdFor(sim.id);
+  const claimed = await db.transaction(async (tx) => {
+    const existing = await getRecord<AgentRun>(id, tx, true);
+    if (existing) return { run: existing.data };
+    const reservation = await getRecord<AgentRunReservation>(reservationId, tx, true);
+    if (reservation && reservation.owner !== owner) throw new HttpError(404, "Simulation not found.");
+    const isFreshRun = reservation?.data.status === "RUNNING" &&
+      Date.now() - Date.parse(reservation.data.startedAt) < 120_000;
+    if (isFreshRun) throw new HttpError(409, "AgenticOrg is already evaluating this simulation. Refresh shortly.");
+    const nextReservation: AgentRunReservation = { status: "RUNNING", startedAt: now() };
+    if (reservation) {
+      await saveRecord(reservationId, nextReservation, tx);
+    } else {
+      const inserted = await insertRecord(reservationId, "agent_run_reservation", owner, nextReservation, tx);
+      if (!inserted.length) throw new HttpError(409, "AgenticOrg is already evaluating this simulation. Refresh shortly.");
+    }
+    return { claimed: true as const };
   });
+  if (claimed.run) { res.json(RunAgentResponse.parse(publicRun(claimed.run))); return; }
+
+  let evaluation;
+  try {
+    evaluation = await evaluateWithAgenticOrg(sim, lesson);
+  } catch (error) {
+    await db.transaction(async (tx) => {
+      const reservation = await getRecord<AgentRunReservation>(reservationId, tx, true);
+      if (reservation?.owner === owner) {
+        await saveRecord(reservationId, { status: "FAILED", startedAt: reservation.data.startedAt }, tx);
+      }
+    });
+    throw error;
+  }
+
   const run: AgentRun = {
     id, simulationId: sim.id, learnerName: publicName(sim.learnerId),
     trackTitle: sim.trackTitle,
-    agentName: "Chanakya_LifeCoach",
-    role: "Chief Life-Skills Evaluator & Personal Action-Plan Architect",
-    provider: "LOCAL_DEMO — not an AgenticOrg API run",
-    toolsCalled: tools,
-    reasoningSteps: [
-      `Evaluated ${sim.choices.length} decisions against the scenario's educational rubric; mastery ${sim.mastery}/100.`,
-      `Calculated illustrative impact ${sim.impact} (${sim.impactLabel}); this is not evidence of actual savings or a clinical score.`,
-      "Prepared three practical follow-up actions, highlighting decisions that need mentor discussion.",
-      "Stopped before certification: a separate human demo-review decision is mandatory.",
-    ],
-    actions, confidenceScore: sim.mastery / 100, mastery: sim.mastery, impact: sim.impact,
-    status: "AWAITING_HUMAN_APPROVAL", timestamp: now(),
+    agentName: "Lifewise Simulation Coach",
+    role: "Life-skills simulation coach",
+    provider: "AgenticOrg · live evaluation",
+    externalRunId: evaluation.externalRunId,
+    toolsCalled: evaluation.toolsCalled,
+    reasoningSteps: evaluation.summary,
+    actions: evaluation.actions,
+    riskFlags: evaluation.riskFlags,
+    confidenceScore: evaluation.confidence,
+    mastery: evaluation.mastery,
+    impact: sim.impact,
+    status: "AWAITING_HUMAN_APPROVAL",
+    timestamp: now(),
   };
-  // Deterministic primary key makes retries and concurrent completion tabs
-  // idempotent without inflating telemetry.
-  await insertRecord(id, "agent", owner, run);
-  const saved = (await getRecord<AgentRun>(id))!;
-  res.json(RunAgentResponse.parse(publicRun(saved.data)));
+  const saved = await db.transaction(async (tx) => {
+    const existing = await getRecord<AgentRun>(id, tx, true);
+    if (existing) return existing.data;
+    await insertRecord(id, "agent", owner, run, tx);
+    await saveRecord(reservationId, { status: "COMPLETED", startedAt: run.timestamp }, tx);
+    return run;
+  });
+  res.json(RunAgentResponse.parse(publicRun(saved)));
 });
 
 router.get("/agent/runs", async (_req, res): Promise<void> => {
@@ -157,7 +192,7 @@ router.get("/proof", async (_req, res): Promise<void> => {
     audits: audits.map((a) => ({ ...a, approver: "Demo mentor" })),
     payments,
     integrations: {
-      agenticOrg: "Not connected · local demo evaluator only",
+      agenticOrg: agenticOrgReady() ? "Credentials configured · live runs are user-triggered; connection not yet tested" : "Not connected · live evaluation unavailable",
       pineLabs: "Not connected · test checkout only · no real payments",
       voice: elevenLabsReady() ? "ElevenLabs AI voice · device fallback available" : "Browser SpeechSynthesis · device voice availability varies",
       ai: aiReady() ? "Replit AI Integrations · OpenAI" : "Awaiting phone verification · preloaded curriculum available",

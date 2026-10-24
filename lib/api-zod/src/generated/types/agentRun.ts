@@ -16,6 +16,8 @@ export interface AgentRun {
   toolsCalled: string[];
   reasoningSteps: string[];
   actions: string[];
+  externalRunId?: string;
+  riskFlags?: string[];
   confidenceScore: number;
   mastery: number;
   impact: number;

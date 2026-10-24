@@ -47,6 +47,7 @@ function Card({ run, approver }: { run: AgentRun; approver: string }) {
       </div>
       <p className="mt-4 font-mono text-[11px] uppercase tracking-widest text-teal">Proposed action kit</p>
       <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm">{run.actions.map((a, i) => <li key={i}>{a}</li>)}</ol>
+      {!!run.riskFlags?.length && <ul className="mt-3 list-disc rounded-lg bg-amber/10 p-3 pl-7 text-sm">{run.riskFlags.map((flag, index) => <li key={index}>{flag}</li>)}</ul>}
       {open ? (
         <div className="mt-4 space-y-3 border-t pt-4">
           <textarea data-testid={`input-note-${run.id}`} rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Mentor note (required for note or reject)" className="w-full rounded-lg border border-input bg-paper p-2 text-sm outline-none focus:border-teal" />
