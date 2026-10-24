@@ -268,10 +268,15 @@ export default function SimulationPage() {
   const { id = '' } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const { state } = useLearner();
-  const simQ = useGetSimulation(id, { query: { queryKey: getGetSimulationQueryKey(id), refetchInterval: 5000, retry: false } });
+  const decide = useMakeDecision();
+  const simQ = useGetSimulation(id, { query: {
+    queryKey: getGetSimulationQueryKey(id),
+    refetchInterval: decide.isPending ? false : 5000,
+    retry: (failureCount, error) => failureCount < 2 && error instanceof TypeError,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
+  } });
   const sim = simQ.data;
   const done = isComplete(sim);
-  const decide = useMakeDecision();
   const agent = useRunAgent();
   const [decErr, setDecErr] = useState<string | null>(null);
   const [agentErr, setAgentErr] = useState<string | null>(null);
@@ -295,9 +300,11 @@ export default function SimulationPage() {
   }, [id, qc]);
 
   async function choose(choiceId: string) {
-    if (!sim || decide.isPending) return;
+    if (!sim || decide.isPending || simQ.isError) return;
     setDecErr(null);
     try {
+      // A polling response for the old step must not overwrite the saved answer.
+      await qc.cancelQueries({ queryKey: getGetSimulationQueryKey(id) });
       const next = await decide.mutateAsync({ id, data: { step: sim.currentStep, choiceId } });
       qc.setQueryData(getGetSimulationQueryKey(id), next);
       await qc.invalidateQueries({ queryKey: getGetLearnerQueryKey() });
@@ -307,8 +314,9 @@ export default function SimulationPage() {
     }
   }
 
-  if (simQ.isLoading) return <ListSkeleton rows={3} />;
-  if (simQ.isError || !sim) return <ErrorState message={errMsg(simQ.error)} onRetry={() => void simQ.refetch()} />;
+  if (simQ.isLoading && !sim) return <ListSkeleton rows={3} />;
+  // A background network failure must not unmount an existing simulation.
+  if (!sim) return <ErrorState message={errMsg(simQ.error)} onRetry={() => void simQ.refetch()} />;
 
   const step = sim.track.steps[sim.currentStep];
   const lang = state?.learner?.language ?? 'English';
@@ -316,6 +324,13 @@ export default function SimulationPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      {simQ.isError && (
+        <div role="status" data-testid="banner-simulation-connection" className="rounded-xl border border-amber bg-amber/10 p-4 text-sm">
+          <p className="font-semibold text-navy">Connection interrupted</p>
+          <p className="mt-1">Showing your last saved progress. Reconnect before choosing your next answer.</p>
+          <button data-testid="button-simulation-reconnect" disabled={simQ.isFetching} onClick={() => void simQ.refetch()} className="mt-3 rounded-lg bg-navy px-4 py-2 font-semibold text-white disabled:opacity-60">{simQ.isFetching ? 'Reconnecting…' : 'Reconnect'}</button>
+        </div>
+      )}
       <div className="rise rounded-3xl bg-navy p-5 text-white shadow-xl sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -351,7 +366,7 @@ export default function SimulationPage() {
           <p data-testid="text-situation" className="mt-2 leading-relaxed text-foreground/85">{step.situation}</p>
           <div className="mt-5 space-y-3">
             {step.choices.map((c, i) => (
-              <button key={c.id} data-testid={`button-choice-${c.id}`} disabled={decide.isPending} onClick={() => void choose(c.id)} className="group flex w-full items-start gap-3 rounded-xl border border-input bg-paper p-4 text-left transition-all hover:border-teal hover:shadow-md active:scale-[.99] disabled:opacity-60">
+              <button key={c.id} data-testid={`button-choice-${c.id}`} disabled={decide.isPending || simQ.isError} onClick={() => void choose(c.id)} className="group flex w-full items-start gap-3 rounded-xl border border-input bg-paper p-4 text-left transition-all hover:border-teal hover:shadow-md active:scale-[.99] disabled:opacity-60">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-navy font-mono text-sm font-bold text-amber group-hover:bg-teal group-hover:text-white">{String.fromCharCode(65 + i)}</span>
                 <span className="pt-1 text-sm font-medium sm:text-base">{c.text}</span>
                 {decide.isPending && decide.variables?.data.choiceId === c.id && <Loader2 className="ml-auto h-4 w-4 animate-spin" />}
